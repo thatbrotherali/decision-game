@@ -151,7 +151,6 @@
       object-fit: contain;
     }
 
-    /* Middle relation card: IS / NOT */
     .pow-relation-card {
       flex: 0 0 90px;
       align-items: center;
@@ -312,7 +311,6 @@
       display: none;
     }
 
-    /* Mobile / narrow screens */
     @media (max-width: 768px) {
       .pow-play-area { flex-direction: row; }
       .pow-card { padding: 8px; }
@@ -324,7 +322,6 @@
       .pow-header { align-items: flex-start; }
     }
 
-    /* Extra small screens – stack if really narrow */
     @media (max-width: 520px) {
       .pow-play-area { flex-direction: column; }
       .pow-relation-card { order: 2; flex-basis: auto; }
@@ -532,6 +529,59 @@
     orientationWarning: document.getElementById("orientationWarning")
   };
 
+  // ---------- Audio (no external files, generated tones) ----------
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!AudioCtx) return null;
+    if (!audioCtx) {
+      try {
+        audioCtx = new AudioCtx();
+      } catch (e) {
+        audioCtx = null;
+      }
+    }
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, volume) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.value = volume;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) { /* ignore */ }
+  }
+
+  function playCountdownBeep(stepIndex) {
+    // 3-2-1 ascending tones
+    const base = 600;
+    playTone(base + stepIndex * 80, 0.15, 0.25);
+  }
+
+  function playStartBell() {
+    playTone(1000, 0.22, 0.3);
+  }
+
+  function playCorrectDing() {
+    playTone(880, 0.12, 0.28);
+  }
+
+  function playFinishBell() {
+    playTone(900, 0.16, 0.25);
+    setTimeout(() => playTone(700, 0.18, 0.22), 180);
+  }
+
+  // ---------- Game state ----------
   let currentMode = "short";
   let targetQuestions = 10;
   let questionCount = 0;
@@ -545,8 +595,29 @@
   let currentQuestionActive = false;
   let runActive = false;
 
+  // sequences for short/long
+  let wordOrder = [];
+  let pictureOrder = [];
+
+  // practice mode last indices (no consecutive repeats)
+  let lastWordIndex = null;
+  let lastPictureIndex = null;
+
+  // relation streak: don't allow more than 2 same in a row
+  let lastIsNot = null;
+  let relationStreak = 0;
+
+  // countdown state
+  let countdownActive = false;
+  let countdownTimers = [];
+
   let leaderboardViewMode = "short";
   let stats = loadStats();
+
+  function clearCountdownTimers() {
+    countdownTimers.forEach(id => clearTimeout(id));
+    countdownTimers = [];
+  }
 
   function loadStats() {
     try {
@@ -601,7 +672,20 @@
     return sec.toFixed(2) + "s";
   }
 
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = temp;
+    }
+    return arr;
+  }
+
   function resetState() {
+    clearCountdownTimers();
+    countdownActive = false;
+
     questionCount = 0;
     correctCount = 0;
     incorrectCount = 0;
@@ -614,11 +698,20 @@
     clearInterval(timerInterval);
     timerInterval = null;
 
+    wordOrder = [];
+    pictureOrder = [];
+    lastWordIndex = null;
+    lastPictureIndex = null;
+
+    lastIsNot = null;
+    relationStreak = 0;
+
     el.statusTotalTime.textContent = "0.00s";
     el.statusAvgTime.textContent = "0.00s";
     el.statusCorrect.textContent = "0";
     el.statusIncorrect.textContent = "0";
-    el.statusQuestion.textContent = "0 / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
+    el.statusQuestion.textContent =
+      "0 / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
 
     el.summaryPanel.style.display = "none";
     el.summaryMessage.textContent = "";
@@ -650,7 +743,7 @@
   }
 
   function setMode(mode) {
-    if (runActive) stopRun(true);
+    if (runActive || countdownActive) stopRun(true);
     currentMode = mode;
     if (mode === "practice") {
       targetQuestions = Infinity;
@@ -663,42 +756,22 @@
     applyModeUI();
   }
 
-  function startRun() {
-    resetState();
-    runActive = true;
-    el.stopButton.disabled = false;
-    sessionStartTime = performance.now();
-    timerInterval = setInterval(updateTimer, 50);
-    nextQuestion();
-  }
-
-  function stopRun(manual) {
-    if (!runActive) return;
-    runActive = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-    el.stopButton.disabled = true;
-    currentQuestionActive = false;
-
+  function prepareSequencesForRun() {
     if (currentMode === "practice") {
-      const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
-      const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
-      showSummary(
-        {
-          mode: currentMode,
-          questions: questionCount,
-          correct: correctCount,
-          incorrect: incorrectCount,
-          totalTime: totalTimeSec,
-          avgReaction: avgReaction
-        },
-        null,
-        false,
-        manual ? "Practice session stopped." : "Practice session complete."
-      );
-    } else {
-      finalizeRun();
+      wordOrder = [];
+      pictureOrder = [];
+      return;
     }
+    const indices = [];
+    for (let i = 0; i < ITEMS.length; i++) indices.push(i);
+
+    const wordIndices = indices.slice();
+    shuffleArray(wordIndices);
+    wordOrder = wordIndices.slice(0, targetQuestions);
+
+    const pictureIndices = indices.slice();
+    shuffleArray(pictureIndices);
+    pictureOrder = pictureIndices.slice(0, targetQuestions);
   }
 
   function updateTimer() {
@@ -714,6 +787,30 @@
     return Math.floor(Math.random() * max);
   }
 
+  // choose isNot with constraint: no more than 2 same in a row
+  function chooseIsNot() {
+    let isNot;
+    if (lastIsNot === null) {
+      isNot = Math.random() < 0.5;
+      lastIsNot = isNot;
+      relationStreak = 1;
+    } else {
+      const randomVal = Math.random() < 0.5;
+      if (randomVal === lastIsNot && relationStreak >= 2) {
+        isNot = !lastIsNot;
+      } else {
+        isNot = randomVal;
+      }
+      if (isNot === lastIsNot) {
+        relationStreak++;
+      } else {
+        lastIsNot = isNot;
+        relationStreak = 1;
+      }
+    }
+    return isNot;
+  }
+
   function nextQuestion() {
     if (!runActive) return;
 
@@ -722,9 +819,36 @@
       return;
     }
 
-    const wordIndex = randomInt(ITEMS.length);
-    const imageIndex = randomInt(ITEMS.length);
-    const isNot = Math.random() < 0.5;
+    let wordIndex;
+    let imageIndex;
+    let isNot;
+
+    if (currentMode === "practice") {
+      if (ITEMS.length === 0) return;
+
+      if (ITEMS.length === 1) {
+        wordIndex = 0;
+      } else {
+        do {
+          wordIndex = randomInt(ITEMS.length);
+        } while (wordIndex === lastWordIndex);
+      }
+
+      if (ITEMS.length === 1) {
+        imageIndex = 0;
+      } else {
+        do {
+          imageIndex = randomInt(ITEMS.length);
+        } while (imageIndex === lastPictureIndex);
+      }
+
+      isNot = chooseIsNot();
+    } else {
+      const idx = questionCount; // 0-based
+      wordIndex = wordOrder[idx];
+      imageIndex = pictureOrder[idx];
+      isNot = chooseIsNot();
+    }
 
     const wordItem = ITEMS[wordIndex];
     const imageItem = ITEMS[imageIndex];
@@ -744,6 +868,9 @@
     const match = wordIndex === imageIndex;
     currentCorrectAnswer = isNot ? !match : match;
 
+    lastWordIndex = wordIndex;
+    lastPictureIndex = imageIndex;
+
     lastQuestionTime = performance.now();
     currentQuestionActive = true;
 
@@ -760,8 +887,12 @@
     questionCount++;
 
     const isCorrect = answerIsTrue === currentCorrectAnswer;
-    if (isCorrect) correctCount++;
-    else incorrectCount++;
+    if (isCorrect) {
+      correctCount++;
+      playCorrectDing();
+    } else {
+      incorrectCount++;
+    }
 
     el.statusCorrect.textContent = String(correctCount);
     el.statusIncorrect.textContent = String(incorrectCount);
@@ -837,42 +968,67 @@
     }
 
     const initials = ensureInitials();
+    const normalizedInitials = (initials || "???").toUpperCase();
     let leaderboard = stats.leaderboard[modeKey] || [];
+    let leaderboardMessage = "";
     let qualifies = false;
 
-    if (leaderboard.length < 100) {
-      qualifies = true;
+    const entry = {
+      initials: normalizedInitials,
+      questions: run.questions,
+      correct: run.correct,
+      incorrect: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction,
+      timestamp: run.timestamp
+    };
+
+    const existingIndex = leaderboard.findIndex(
+      e => (e.initials || "???").toUpperCase() === normalizedInitials
+    );
+
+    if (existingIndex >= 0) {
+      const existing = leaderboard[existingIndex];
+      if (compareRuns(run, existing) < 0) {
+        leaderboard[existingIndex] = entry;
+        qualifies = true;
+        leaderboardMessage = "You improved your best score for this mode.";
+      } else {
+        qualifies = false;
+        leaderboardMessage =
+          "This run did not beat your best score for this mode.";
+      }
     } else {
-      const worst = leaderboard[leaderboard.length - 1];
-      if (compareRuns(run, worst) < 0) qualifies = true;
+      if (leaderboard.length < 100) {
+        leaderboard.push(entry);
+        qualifies = true;
+        leaderboardMessage = "This run made it into the top 100 for this mode.";
+      } else {
+        const worst = leaderboard[leaderboard.length - 1];
+        if (compareRuns(run, worst) < 0) {
+          leaderboard.push(entry);
+          qualifies = true;
+          leaderboardMessage =
+            "This run made it into the top 100 for this mode.";
+        } else {
+          qualifies = false;
+          leaderboardMessage =
+            "This run did not reach the top 100, but it is still recorded as your current run.";
+        }
+      }
     }
 
-    let leaderboardMessage = "";
     if (qualifies) {
-      const entry = {
-        initials: initials || "???",
-        questions: run.questions,
-        correct: run.correct,
-        incorrect: run.incorrect,
-        totalTime: run.totalTime,
-        avgReaction: run.avgReaction,
-        timestamp: run.timestamp
-      };
-      leaderboard.push(entry);
       leaderboard.sort(compareRuns);
       leaderboard = leaderboard.slice(0, 100);
       stats.leaderboard[modeKey] = leaderboard;
-      leaderboardMessage = "This run made it into the top 100 for this mode.";
-    } else {
-      leaderboardMessage =
-        "This run did not reach the top 100, but it is still recorded as your current run.";
     }
 
     saveStats();
     renderLeaderboard(leaderboardViewMode);
-
     const best = stats.runs[modeKey].bestRun;
     showSummary(run, best, isPersonalBest, leaderboardMessage);
+    playFinishBell();
   }
 
   function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
@@ -973,18 +1129,114 @@
       isMobile && portrait ? "block" : "none";
   }
 
-  el.modePractice.addEventListener("click", () => setMode("practice"));
-  el.modeShort.addEventListener("click", () => setMode("short"));
-  el.modeLong.addEventListener("click", () => setMode("long"));
+  // Countdown then start run
+  function startCountdownThenRun() {
+    if (countdownActive || runActive) return;
+    countdownActive = true;
+    el.summaryPanel.style.display = "none";
 
-  el.startButton.addEventListener("click", () => startRun());
-  el.stopButton.addEventListener("click", () => stopRun(true));
+    el.wordDisplay.textContent = "Get ready...";
+    el.pictureDisplay.src = "";
+    el.relationLabel.textContent = "";
+    el.relationLabel.classList.remove("pow-relation-not");
 
-  el.falseButton.addEventListener("click", () => handleAnswer(false));
-  el.trueButton.addEventListener("click", () => handleAnswer(true));
+    el.falseButton.disabled = true;
+    el.trueButton.disabled = true;
+    el.stopButton.disabled = true;
 
-  window.addEventListener("keydown", (e) => {
-    if (!runActive) return;
+    const steps = [3, 2, 1];
+    let delay = 500;
+
+    steps.forEach((num, idx) => {
+      const t = setTimeout(() => {
+        el.wordDisplay.textContent = String(num);
+        playCountdownBeep(idx);
+      }, delay);
+      countdownTimers.push(t);
+      delay += 1000;
+    });
+
+    const finalTimeout = setTimeout(() => {
+      countdownActive = false;
+      playStartBell();
+      actuallyStartRun();
+    }, delay);
+    countdownTimers.push(finalTimeout);
+  }
+
+  function actuallyStartRun() {
+    if (runActive) return;
+    runActive = true;
+    el.falseButton.disabled = false;
+    el.trueButton.disabled = false;
+    el.stopButton.disabled = false;
+
+    sessionStartTime = performance.now();
+    timerInterval = setInterval(updateTimer, 50);
+    nextQuestion();
+  }
+
+  function stopRun(manual) {
+    if (!runActive && !countdownActive) return;
+
+    clearCountdownTimers();
+    countdownActive = false;
+
+    if (!runActive) {
+      resetState();
+      return;
+    }
+
+    runActive = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    el.stopButton.disabled = true;
+    currentQuestionActive = false;
+
+    if (currentMode === "practice") {
+      const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+      const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+      showSummary(
+        {
+          mode: currentMode,
+          questions: questionCount,
+          correct: correctCount,
+          incorrect: incorrectCount,
+          totalTime: totalTimeSec,
+          avgReaction: avgReaction
+        },
+        null,
+        false,
+        manual ? "Practice session stopped." : "Practice session complete."
+      );
+      playFinishBell();
+    } else {
+      finalizeRun();
+    }
+  }
+
+  // ---------- Event wiring ----------
+  el.modePractice.addEventListener("click", function () { setMode("practice"); });
+  el.modeShort.addEventListener("click", function () { setMode("short"); });
+  el.modeLong.addEventListener("click", function () { setMode("long"); });
+
+  el.startButton.addEventListener("click", function () {
+    if (countdownActive) return;
+    if (runActive) stopRun(true);
+    resetState();
+    if (currentMode !== "practice") {
+      prepareSequencesForRun();
+    }
+    startCountdownThenRun();
+  });
+
+  el.stopButton.addEventListener("click", function () { stopRun(true); });
+
+  el.falseButton.addEventListener("click", function () { handleAnswer(false); });
+  el.trueButton.addEventListener("click", function () { handleAnswer(true); });
+
+  window.addEventListener("keydown", function (e) {
+    if (!runActive || countdownActive) return;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       handleAnswer(false);
@@ -994,15 +1246,16 @@
     }
   });
 
-  el.leaderboardShortBtn.addEventListener("click", () =>
-    renderLeaderboard("short")
-  );
-  el.leaderboardLongBtn.addEventListener("click", () =>
-    renderLeaderboard("long")
-  );
+  el.leaderboardShortBtn.addEventListener("click", function () {
+    renderLeaderboard("short");
+  });
+  el.leaderboardLongBtn.addEventListener("click", function () {
+    renderLeaderboard("long");
+  });
 
   window.addEventListener("resize", handleOrientationWarning);
 
+  // ---------- Init ----------
   applyModeUI();
   resetState();
   renderLeaderboard("short");
