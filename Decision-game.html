@@ -249,11 +249,6 @@
 
     .pow-leaderboard-title { font-weight: 600; }
 
-    .pow-leaderboard-mode-buttons button {
-      padding: 4px 10px;
-      font-size: 0.8rem;
-    }
-
     .pow-leaderboard-table-wrapper {
       max-height: 280px;
       overflow: auto;
@@ -410,11 +405,8 @@
   <div class="pow-header">
     <div class="pow-header-title">Test and Improve Your Decision Making</div>
     <div class="pow-mode-buttons">
-      <button id="modePractice" class="pow-ghost">Practice</button>
-      <button id="modeShort" class="pow-primary">Short (10)</button>
-      <button id="modeLong" class="pow-ghost">Long (20)</button>
-      <button id="startButton" class="pow-primary">Start</button>
-      <button id="stopButton" class="pow-danger" disabled>Stop</button>
+      <button id="modeToggleButton" class="pow-ghost">Mode: Short (10)</button>
+      <button id="startStopButton" class="pow-primary">Start</button>
     </div>
   </div>
 
@@ -445,7 +437,7 @@
     <button id="trueButton" class="true">True</button>
   </div>
 
-  <!-- Status bar moved here, after True / False buttons -->
+  <!-- Status bar after True / False -->
   <div class="pow-status-bar">
     <div class="pow-status-item">
       <div class="pow-label">Mode</div>
@@ -474,8 +466,9 @@
   </div>
 
   <div class="pow-helper-text" id="helperText">
-    Choose a mode, press <strong>Start</strong>, then answer:<br />
-    <strong>True</strong> if the middle word (“IS” or “NOT”) makes the sentence correct.<br />
+    Tap <strong>Mode</strong> to switch between Practice / Short / Long, then press
+    <strong>Start</strong>.<br />
+    Answer <strong>True</strong> if the middle word (“IS” or “NOT”) makes the sentence correct.<br />
     On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
   </div>
 
@@ -522,9 +515,10 @@
           Ranked by fewest mistakes, then total time, then average reaction.
         </div>
       </div>
-      <div class="pow-leaderboard-mode-buttons">
-        <button id="leaderboardShortBtn" class="pow-primary">Short</button>
-        <button id="leaderboardLongBtn" class="pow-ghost">Long</button>
+      <div>
+        <button id="leaderboardToggleButton" class="pow-primary">
+          View: Short
+        </button>
       </div>
     </div>
     <div class="pow-leaderboard-table-wrapper">
@@ -623,11 +617,8 @@
   const STORAGE_KEY = "powDecisionGameStats_v1";
 
   const el = {
-    modePractice: document.getElementById("modePractice"),
-    modeShort: document.getElementById("modeShort"),
-    modeLong: document.getElementById("modeLong"),
-    startButton: document.getElementById("startButton"),
-    stopButton: document.getElementById("stopButton"),
+    modeToggleButton: document.getElementById("modeToggleButton"),
+    startStopButton: document.getElementById("startStopButton"),
     statusMode: document.getElementById("statusMode"),
     statusQuestion: document.getElementById("statusQuestion"),
     statusTotalTime: document.getElementById("statusTotalTime"),
@@ -650,14 +641,13 @@
     summaryMessage: document.getElementById("summaryMessage"),
     leaderboardBody: document.getElementById("leaderboardBody"),
     leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
-    leaderboardShortBtn: document.getElementById("leaderboardShortBtn"),
-    leaderboardLongBtn: document.getElementById("leaderboardLongBtn"),
+    leaderboardToggleButton: document.getElementById("leaderboardToggleButton"),
     orientationWarning: document.getElementById("orientationWarning"),
     instructionsModal: document.getElementById("instructionsModal"),
     instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
   };
 
-  // ---------- Audio (no external files, generated tones) ----------
+  // ---------- Audio ----------
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
 
@@ -726,7 +716,7 @@
   }
 
   // ---------- Game state ----------
-  let currentMode = "short";
+  let currentMode = "short"; // practice | short | long
   let targetQuestions = 10;
   let questionCount = 0;
   let correctCount = 0;
@@ -864,9 +854,11 @@
     el.wordDisplay.textContent = "Press Start";
     el.relationLabel.textContent = "IS";
     el.relationLabel.classList.remove("pow-relation-not");
-    el.stopButton.disabled = true;
 
-    // Show a random image initially instead of a broken placeholder
+    // Reset start/stop button label
+    el.startStopButton.textContent = "Start";
+
+    // Show a random image initially so we don't see a broken placeholder
     if (ITEMS.length > 0) {
       const idx = Math.floor(Math.random() * ITEMS.length);
       const item = ITEMS[idx];
@@ -879,27 +871,27 @@
   }
 
   function applyModeUI() {
-    el.modePractice.classList.toggle("pow-primary", currentMode === "practice");
-    el.modePractice.classList.toggle("pow-ghost", currentMode !== "practice");
-    el.modeShort.classList.toggle("pow-primary", currentMode === "short");
-    el.modeShort.classList.toggle("pow-ghost", currentMode !== "short");
-    el.modeLong.classList.toggle("pow-primary", currentMode === "long");
-    el.modeLong.classList.toggle("pow-ghost", currentMode !== "long");
-
+    let label;
     if (currentMode === "practice") {
+      label = "Mode: Practice";
       el.statusMode.textContent = "Practice";
       el.statusQuestion.textContent = "0 / ∞";
     } else if (currentMode === "short") {
+      label = "Mode: Short (10)";
       el.statusMode.textContent = "Short (10)";
       el.statusQuestion.textContent = "0 / 10";
-    } else if (currentMode === "long") {
+    } else {
+      label = "Mode: Long (20)";
       el.statusMode.textContent = "Long (20)";
       el.statusQuestion.textContent = "0 / 20";
     }
+    el.modeToggleButton.textContent = label;
   }
 
   function setMode(mode) {
-    if (runActive || countdownActive) stopRun(true);
+    if (runActive || countdownActive) {
+      stopRun(true);
+    }
     currentMode = mode;
     if (mode === "practice") {
       targetQuestions = Infinity;
@@ -910,6 +902,16 @@
     }
     resetState();
     applyModeUI();
+  }
+
+  function cycleMode() {
+    if (currentMode === "practice") {
+      setMode("short");
+    } else if (currentMode === "short") {
+      setMode("long");
+    } else {
+      setMode("practice");
+    }
   }
 
   function prepareSequencesForRun() {
@@ -1072,7 +1074,6 @@
     return compareRuns(candidate, baseline) < 0;
   }
 
-  // UPDATED: better initials handling, no permanent "???"
   function ensureInitials() {
     const prev = (stats.playerInitials || "").trim().toUpperCase();
     const hasValidPrev = prev && prev !== "???";
@@ -1105,12 +1106,15 @@
       return prev;
     }
 
-    // No valid initials yet – use ??? for this run only, but do not save it
     return "???";
   }
 
   function finalizeRun() {
     if (!currentMode || currentMode === "practice") return;
+    // Only record full runs
+    if (currentMode !== "practice" && isFinite(targetQuestions) && questionCount < targetQuestions) {
+      return;
+    }
 
     const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
     const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
@@ -1235,8 +1239,8 @@
     if (run.mode !== "practice") {
       if (isPersonalBest) {
         msg += (msg ? " " : "") + "Personal best for this mode!";
-      } else {
-        msg += (msg ? " " : "") + "Keep going to beat your best score.";
+      } else if (!msg) {
+        msg = "Keep going to beat your best score.";
       }
     }
     el.summaryMessage.textContent = msg;
@@ -1251,6 +1255,9 @@
 
     el.leaderboardModeLabel.textContent =
       modeKey === "short" ? "Short" : "Long";
+
+    el.leaderboardToggleButton.textContent =
+      "View: " + (modeKey === "short" ? "Short" : "Long");
 
     list.forEach((entry, index) => {
       const tr = document.createElement("tr");
@@ -1272,23 +1279,14 @@
 
       el.leaderboardBody.appendChild(tr);
     });
+  }
 
-    el.leaderboardShortBtn.classList.toggle(
-      "pow-primary",
-      modeKey === "short"
-    );
-    el.leaderboardShortBtn.classList.toggle(
-      "pow-ghost",
-      modeKey !== "short"
-    );
-    el.leaderboardLongBtn.classList.toggle(
-      "pow-primary",
-      modeKey === "long"
-    );
-    el.leaderboardLongBtn.classList.toggle(
-      "pow-ghost",
-      modeKey !== "long"
-    );
+  function toggleLeaderboardMode() {
+    if (leaderboardViewMode === "short") {
+      renderLeaderboard("long");
+    } else {
+      renderLeaderboard("short");
+    }
   }
 
   function handleOrientationWarning() {
@@ -1312,7 +1310,9 @@
 
     el.falseButton.disabled = true;
     el.trueButton.disabled = true;
-    el.stopButton.disabled = true;
+
+    // Switch button label to Stop while countdown is active
+    el.startStopButton.textContent = "Stop";
 
     const steps = [3, 2, 1];
     let delay = 500;
@@ -1339,7 +1339,8 @@
     runActive = true;
     el.falseButton.disabled = false;
     el.trueButton.disabled = false;
-    el.stopButton.disabled = false;
+
+    el.startStopButton.textContent = "Stop";
 
     sessionStartTime = performance.now();
     timerInterval = setInterval(updateTimer, 50);
@@ -1360,12 +1361,15 @@
     runActive = false;
     clearInterval(timerInterval);
     timerInterval = null;
-    el.stopButton.disabled = true;
     currentQuestionActive = false;
 
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    // Reset button label
+    el.startStopButton.textContent = "Start";
+
     if (currentMode === "practice") {
-      const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
-      const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
       showSummary(
         {
           mode: currentMode,
@@ -1381,26 +1385,44 @@
       );
       playFinishBell();
     } else {
-      finalizeRun();
+      // Only record if full run; else show summary but don't record
+      if (questionCount < targetQuestions) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs[currentMode]?.bestRun || null,
+          false,
+          "Run stopped before completion. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
     }
   }
 
   // ---------- Event wiring ----------
-  el.modePractice.addEventListener("click", function () { setMode("practice"); });
-  el.modeShort.addEventListener("click", function () { setMode("short"); });
-  el.modeLong.addEventListener("click", function () { setMode("long"); });
+  el.modeToggleButton.addEventListener("click", cycleMode);
 
-  el.startButton.addEventListener("click", function () {
-    if (countdownActive) return;
-    if (runActive) stopRun(true);
-    resetState();
-    if (currentMode !== "practice") {
-      prepareSequencesForRun();
+  el.startStopButton.addEventListener("click", function () {
+    if (!runActive && !countdownActive) {
+      // Start
+      resetState();
+      if (currentMode !== "practice") {
+        prepareSequencesForRun();
+      }
+      startCountdownThenRun();
+    } else {
+      // Stop (either during countdown or run)
+      stopRun(true);
     }
-    startCountdownThenRun();
   });
-
-  el.stopButton.addEventListener("click", function () { stopRun(true); });
 
   el.falseButton.addEventListener("click", function () { handleAnswer(false); });
   el.trueButton.addEventListener("click", function () { handleAnswer(true); });
@@ -1416,12 +1438,7 @@
     }
   });
 
-  el.leaderboardShortBtn.addEventListener("click", function () {
-    renderLeaderboard("short");
-  });
-  el.leaderboardLongBtn.addEventListener("click", function () {
-    renderLeaderboard("long");
-  });
+  el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
 
   window.addEventListener("resize", handleOrientationWarning);
 
