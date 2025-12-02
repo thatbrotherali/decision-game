@@ -123,12 +123,14 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      min-width: 0;
     }
 
     .pow-word {
       font-size: 2.1rem;
       font-weight: 700;
       text-align: center;
+      word-wrap: break-word;
     }
 
     .pow-image-wrapper {
@@ -164,6 +166,7 @@
       font-size: 1.8rem;
       font-weight: 700;
       color: #333;
+      word-wrap: break-word;
     }
 
     .pow-relation-not {
@@ -369,9 +372,19 @@
     }
 
     @media (max-width: 768px) {
-      .pow-play-area { flex-direction: row; }
-      .pow-card { padding: 8px; }
-      .pow-word { font-size: 1.5rem; }
+      .pow-play-area {
+        flex-direction: row;
+        gap: 6px;
+      }
+      .pow-card {
+        padding: 8px;
+      }
+      .pow-word {
+        font-size: 1.5rem;
+      }
+      .pow-relation-label {
+        font-size: 1.4rem;
+      }
       .pow-actions button {
         padding: 10px 10px;
         font-size: 1rem;
@@ -379,10 +392,17 @@
       .pow-header { align-items: flex-start; }
     }
 
+    /* Keep horizontal play-area even on very small screens */
     @media (max-width: 520px) {
-      .pow-play-area { flex-direction: column; }
-      .pow-relation-card { order: 2; flex-basis: auto; }
-      .pow-actions { flex-direction: column; }
+      .pow-play-area {
+        flex-direction: row;
+      }
+      .pow-relation-card {
+        flex: 0 0 70px;
+      }
+      .pow-header-title {
+        font-size: 1.1rem;
+      }
     }
   </style>
 </head>
@@ -695,7 +715,7 @@
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "square";
-      osc.frequency.value = 260; // lower, harsher
+      osc.frequency.value = 260;
       gain.gain.value = 0.22;
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -836,10 +856,20 @@
     el.summaryPanel.style.display = "none";
     el.summaryMessage.textContent = "";
     el.wordDisplay.textContent = "Press Start";
-    el.pictureDisplay.src = "";
     el.relationLabel.textContent = "IS";
     el.relationLabel.classList.remove("pow-relation-not");
     el.stopButton.disabled = true;
+
+    // NEW: show a random image as a clean placeholder instead of broken icon
+    if (ITEMS.length > 0) {
+      const idx = Math.floor(Math.random() * ITEMS.length);
+      const item = ITEMS[idx];
+      el.pictureDisplay.src = item.url;
+      el.pictureDisplay.alt = item.label;
+    } else {
+      el.pictureDisplay.src = "";
+      el.pictureDisplay.alt = "Decision picture";
+    }
   }
 
   function applyModeUI() {
@@ -1255,7 +1285,6 @@
     el.summaryPanel.style.display = "none";
 
     el.wordDisplay.textContent = "Get ready...";
-    el.pictureDisplay.src = "";
     el.relationLabel.textContent = "";
     el.relationLabel.classList.remove("pow-relation-not");
 
@@ -1379,15 +1408,11 @@
     el.instructionsModal.style.display = "none";
   });
 
-  function handleOrientationWarningInit() {
-    handleOrientationWarning();
-  }
-
   // ---------- Init ----------
   applyModeUI();
-  resetState();
+  resetState();          // now sets a clean random image
   renderLeaderboard("short");
-  handleOrientationWarningInit();
+  handleOrientationWarning();
 })();
 </script>
 </body>
