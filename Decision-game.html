@@ -311,6 +311,63 @@
       display: none;
     }
 
+    /* Modal for instructions */
+    .pow-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .pow-modal {
+      max-width: 520px;
+      width: 92%;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.18);
+      padding: 16px 18px 14px;
+    }
+
+    .pow-modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .pow-modal-sub {
+      font-size: 0.85rem;
+      color: var(--pow-muted);
+      margin-bottom: 10px;
+    }
+
+    .pow-modal-section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-text {
+      font-size: 0.8rem;
+      color: var(--pow-text);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .pow-modal-footer button {
+      padding: 6px 16px;
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
       .pow-play-area { flex-direction: row; }
       .pow-card { padding: 8px; }
@@ -469,6 +526,55 @@
   </div>
 </div>
 
+<!-- Instructions modal -->
+<div id="instructionsModal" class="pow-modal-backdrop" style="display:flex;">
+  <div class="pow-modal">
+    <div class="pow-modal-title">Welcome to the POW Decision Game</div>
+    <div class="pow-modal-sub">
+      Train your moment-to-moment decision making with fast, honest feedback.
+    </div>
+
+    <div class="pow-modal-section-title">How it works</div>
+    <div class="pow-modal-text">
+      You see a <strong>word</strong> on the left, a <strong>picture</strong> on the right,
+      and the middle word is either <strong>“IS”</strong> or <strong style="color:#c0392b;">“NOT”</strong>.
+    </div>
+    <div class="pow-modal-text">
+      Your job is to decide if the full sentence is <strong>true or false</strong>.
+    </div>
+
+    <div class="pow-modal-section-title">Controls</div>
+    <div class="pow-modal-text">
+      • Tap / click the <strong>True</strong> or <strong>False</strong> buttons.<br/>
+      • On desktop you can also use:
+      <strong>Left Arrow → False</strong>, <strong>Right Arrow → True</strong>.
+    </div>
+
+    <div class="pow-modal-section-title">Modes</div>
+    <div class="pow-modal-text">
+      • <strong>Practice</strong>: Infinite questions, just train. Time and average reaction are shown, but not ranked.<br/>
+      • <strong>Short</strong>: 10 questions, used for the leaderboard.<br/>
+      • <strong>Long</strong>: 20 questions, also ranked separately.
+    </div>
+
+    <div class="pow-modal-section-title">Scoring & sounds</div>
+    <div class="pow-modal-text">
+      • You get a <strong>green ding</strong> for a correct answer.<br/>
+      • A <strong>low buzzer</strong> means the answer was wrong.<br/>
+      • A <strong>start bell</strong> plays after the 3-2-1 countdown.<br/>
+      • A <strong>finish bell</strong> plays at the end of each run.
+    </div>
+    <div class="pow-modal-text">
+      The leaderboard keeps only your <strong>best score per mode</strong>, based on:
+      fewest mistakes, then total time, then average reaction time.
+    </div>
+
+    <div class="pow-modal-footer">
+      <button id="instructionsCloseBtn" class="pow-primary">Got it</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   const ITEMS = [
@@ -526,7 +632,9 @@
     leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
     leaderboardShortBtn: document.getElementById("leaderboardShortBtn"),
     leaderboardLongBtn: document.getElementById("leaderboardLongBtn"),
-    orientationWarning: document.getElementById("orientationWarning")
+    orientationWarning: document.getElementById("orientationWarning"),
+    instructionsModal: document.getElementById("instructionsModal"),
+    instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
   };
 
   // ---------- Audio (no external files, generated tones) ----------
@@ -563,7 +671,6 @@
   }
 
   function playCountdownBeep(stepIndex) {
-    // 3-2-1 ascending tones
     const base = 600;
     playTone(base + stepIndex * 80, 0.15, 0.25);
   }
@@ -581,6 +688,23 @@
     setTimeout(() => playTone(700, 0.18, 0.22), 180);
   }
 
+  function playWrongBuzz() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 260; // lower, harsher
+      gain.gain.value = 0.22;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch (e) { /* ignore */ }
+  }
+
   // ---------- Game state ----------
   let currentMode = "short";
   let targetQuestions = 10;
@@ -595,19 +719,15 @@
   let currentQuestionActive = false;
   let runActive = false;
 
-  // sequences for short/long
   let wordOrder = [];
   let pictureOrder = [];
 
-  // practice mode last indices (no consecutive repeats)
   let lastWordIndex = null;
   let lastPictureIndex = null;
 
-  // relation streak: don't allow more than 2 same in a row
   let lastIsNot = null;
   let relationStreak = 0;
 
-  // countdown state
   let countdownActive = false;
   let countdownTimers = [];
 
@@ -787,7 +907,6 @@
     return Math.floor(Math.random() * max);
   }
 
-  // choose isNot with constraint: no more than 2 same in a row
   function chooseIsNot() {
     let isNot;
     if (lastIsNot === null) {
@@ -844,7 +963,7 @@
 
       isNot = chooseIsNot();
     } else {
-      const idx = questionCount; // 0-based
+      const idx = questionCount;
       wordIndex = wordOrder[idx];
       imageIndex = pictureOrder[idx];
       isNot = chooseIsNot();
@@ -892,6 +1011,7 @@
       playCorrectDing();
     } else {
       incorrectCount++;
+      playWrongBuzz();
     }
 
     el.statusCorrect.textContent = String(correctCount);
@@ -1129,7 +1249,6 @@
       isMobile && portrait ? "block" : "none";
   }
 
-  // Countdown then start run
   function startCountdownThenRun() {
     if (countdownActive || runActive) return;
     countdownActive = true;
@@ -1255,11 +1374,20 @@
 
   window.addEventListener("resize", handleOrientationWarning);
 
+  // Instructions modal close
+  el.instructionsCloseBtn.addEventListener("click", function () {
+    el.instructionsModal.style.display = "none";
+  });
+
+  function handleOrientationWarningInit() {
+    handleOrientationWarning();
+  }
+
   // ---------- Init ----------
   applyModeUI();
   resetState();
   renderLeaderboard("short");
-  handleOrientationWarning();
+  handleOrientationWarningInit();
 })();
 </script>
 </body>
