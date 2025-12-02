@@ -392,7 +392,6 @@
       .pow-header { align-items: flex-start; }
     }
 
-    /* Keep horizontal play-area even on very small screens */
     @media (max-width: 520px) {
       .pow-play-area {
         flex-direction: row;
@@ -423,6 +422,30 @@
     For best experience on mobile, rotate your device to landscape.
   </div>
 
+  <div class="pow-play-area">
+    <div class="pow-card">
+      <div class="pow-label">Word</div>
+      <div class="pow-word" id="wordDisplay">Press Start</div>
+    </div>
+
+    <div class="pow-card pow-relation-card">
+      <div class="pow-relation-label" id="relationLabel">IS</div>
+    </div>
+
+    <div class="pow-card">
+      <div class="pow-label">Picture</div>
+      <div class="pow-image-wrapper">
+        <img id="pictureDisplay" alt="Decision picture" />
+      </div>
+    </div>
+  </div>
+
+  <div class="pow-actions">
+    <button id="falseButton" class="false">False</button>
+    <button id="trueButton" class="true">True</button>
+  </div>
+
+  <!-- Status bar moved here, after True / False buttons -->
   <div class="pow-status-bar">
     <div class="pow-status-item">
       <div class="pow-label">Mode</div>
@@ -448,29 +471,6 @@
       <div class="pow-label">Incorrect</div>
       <div class="pow-value" id="statusIncorrect">0</div>
     </div>
-  </div>
-
-  <div class="pow-play-area">
-    <div class="pow-card">
-      <div class="pow-label">Word</div>
-      <div class="pow-word" id="wordDisplay">Press Start</div>
-    </div>
-
-    <div class="pow-card pow-relation-card">
-      <div class="pow-relation-label" id="relationLabel">IS</div>
-    </div>
-
-    <div class="pow-card">
-      <div class="pow-label">Picture</div>
-      <div class="pow-image-wrapper">
-        <img id="pictureDisplay" alt="Decision picture" />
-      </div>
-    </div>
-  </div>
-
-  <div class="pow-actions">
-    <button id="falseButton" class="false">False</button>
-    <button id="trueButton" class="true">True</button>
   </div>
 
   <div class="pow-helper-text" id="helperText">
@@ -788,6 +788,12 @@
         parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
       if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
       if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
+
+      // Treat "???" as empty so we re-prompt for proper initials
+      if (parsed.playerInitials === "???") {
+        parsed.playerInitials = "";
+      }
+
       return parsed;
     } catch (e) {
       return {
@@ -860,7 +866,7 @@
     el.relationLabel.classList.remove("pow-relation-not");
     el.stopButton.disabled = true;
 
-    // NEW: show a random image as a clean placeholder instead of broken icon
+    // Show a random image initially instead of a broken placeholder
     if (ITEMS.length > 0) {
       const idx = Math.floor(Math.random() * ITEMS.length);
       const item = ITEMS[idx];
@@ -1066,25 +1072,41 @@
     return compareRuns(candidate, baseline) < 0;
   }
 
+  // UPDATED: better initials handling, no permanent "???"
   function ensureInitials() {
-    if (stats.playerInitials && stats.playerInitials.trim().length > 0) {
-      return stats.playerInitials;
+    const prev = (stats.playerInitials || "").trim().toUpperCase();
+    const hasValidPrev = prev && prev !== "???";
+    if (hasValidPrev) {
+      return prev;
     }
+
     let initials = "";
-    while (!initials) {
-      initials = (prompt("Enter your initials (1–4 characters):", "") || "")
-        .trim()
-        .toUpperCase();
-      if (initials.length === 0) {
-        if (!confirm("No initials entered. Try again?")) break;
-        else initials = "";
-      } else if (initials.length > 4) {
-        initials = initials.substring(0, 4);
+    while (true) {
+      const input = prompt("Enter your initials (1–4 characters):", "") || "";
+      initials = input.trim().toUpperCase();
+
+      if (!initials) {
+        if (!confirm("No initials entered. Try again?")) {
+          break;
+        }
+      } else {
+        if (initials.length > 4) initials = initials.substring(0, 4);
+        break;
       }
     }
-    stats.playerInitials = initials || "???";
-    saveStats();
-    return stats.playerInitials;
+
+    if (initials) {
+      stats.playerInitials = initials;
+      saveStats();
+      return initials;
+    }
+
+    if (hasValidPrev) {
+      return prev;
+    }
+
+    // No valid initials yet – use ??? for this run only, but do not save it
+    return "???";
   }
 
   function finalizeRun() {
@@ -1410,7 +1432,7 @@
 
   // ---------- Init ----------
   applyModeUI();
-  resetState();          // now sets a clean random image
+  resetState();
   renderLeaderboard("short");
   handleOrientationWarning();
 })();
