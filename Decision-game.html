@@ -4,418 +4,497 @@
   <meta charset="UTF-8" />
   <title>People of the World – Decision Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    :root {
-      --pow-bg: #f4f5fb;
-      --pow-accent: #1c8fa9;
-      --pow-accent-soft: #e0f3f7;
-      --pow-text: #222;
-      --pow-muted: #666;
-      --pow-card-bg: #ffffff;
-      --pow-danger: #c0392b;
-      --pow-success: #27ae60;
-    }
+ <style>
+  :root {
+    --pow-bg: #f4f5fb;
+    --pow-accent: #1c8fa9;
+    --pow-accent-soft: #e0f3f7;
+    --pow-text: #222;
+    --pow-muted: #666;
+    --pow-card-bg: #ffffff;
+    --pow-danger: #c0392b;
+    --pow-success: #27ae60;
+  }
 
-    * { box-sizing: border-box; }
+  * { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: var(--pow-bg);
-      color: var(--pow-text);
-    }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    background: var(--pow-bg);
+    color: var(--pow-text);
+  }
 
-    #pow-decision-game {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 12px;
-    }
+  #pow-decision-game {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 12px;
+  }
 
-    .pow-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
+  .pow-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
 
+  .pow-header-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .pow-mode-buttons {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    border-radius: 999px;
+    border: none;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: #e4e6f0;
+    color: var(--pow-text);
+    font-weight: 500;
+    transition: background 0.15s, transform 0.05s;
+    white-space: nowrap;
+  }
+
+  button:hover { background: #d5d7e5; }
+  button:active { transform: scale(0.97); }
+
+  button.pow-primary {
+    background: var(--pow-accent);
+    color: #fff;
+  }
+  button.pow-primary:hover { background: #147187; }
+
+  button.pow-ghost {
+    background: transparent;
+    border: 1px solid #cfd3e5;
+  }
+
+  button.pow-danger {
+    background: var(--pow-danger);
+    color: #fff;
+  }
+  button.pow-danger:hover { background: #962d22; }
+
+  .pow-status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 16px;
+    background: var(--pow-accent-soft);
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+  }
+
+  .pow-status-item {
+    min-width: 110px;
+  }
+
+  .pow-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pow-muted);
+    margin-bottom: 2px;
+    /* hidden from player */
+    display: none;
+  }
+
+  .pow-value { font-weight: 600; }
+
+  .pow-play-area {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    align-items: stretch;
+  }
+
+  .pow-card {
+    flex: 1;
+    background: var(--pow-card-bg);
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .pow-word {
+    font-size: 2.1rem;
+    font-weight: 700;
+    text-align: center;
+    word-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pow-image-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 70%; /* overridden on mobile to shrink height */
+    overflow: hidden;
+    border-radius: 16px;
+    background: #f8f8fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pow-image-wrapper img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .pow-relation-card {
+    flex: 0 0 90px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .pow-relation-label {
+    width: 100%;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    word-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pow-relation-not {
+    color: var(--pow-danger);
+    font-size: 2.2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .pow-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .pow-actions button {
+    flex: 1;
+    padding: 12px 18px;
+    font-size: 1.1rem;
+  }
+
+  .pow-actions .false {
+    background: #f7d7d7;
+    color: #b03030;
+  }
+  .pow-actions .false:hover { background: #f1c0c0; }
+
+  .pow-actions .true {
+    background: #d5f3dd;
+    color: #227a3b;
+  }
+  .pow-actions .true:hover { background: #beeac9; }
+
+  .pow-helper-text {
+    font-size: 0.75rem;
+    color: var(--pow-muted);
+    margin-bottom: 8px;
+  }
+
+  .pow-summary {
+    background: var(--pow-card-bg);
+    border-radius: 16px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    font-size: 0.9rem;
+  }
+
+  .pow-summary-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .pow-summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+
+  .pow-summary-highlight {
+    color: var(--pow-success);
+    font-weight: 600;
+  }
+
+  .pow-leaderboard-section {
+    background: var(--pow-card-bg);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    font-size: 0.85rem;
+  }
+
+  .pow-leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pow-leaderboard-title { font-weight: 600; }
+
+  .pow-leaderboard-table-wrapper {
+    max-height: 280px;
+    overflow: auto;
+    border-radius: 12px;
+    border: 1px solid #e0e2f0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: #f5f6ff;
+    z-index: 1;
+  }
+
+  th, td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid #f0f1f7;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--pow-muted);
+    font-size: 0.75rem;
+  }
+
+  tbody tr:nth-child(odd) { background: #fafbff; }
+
+  .pow-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    background: #e0f3f7;
+    color: #256773;
+  }
+
+  .pow-message {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--pow-muted);
+  }
+
+  .pow-message.highlight {
+    color: var(--pow-success);
+  }
+
+  .pow-warning {
+    font-size: 0.8rem;
+    color: var(--pow-danger);
+    margin-bottom: 6px;
+    display: none;
+  }
+
+  /* Modal for instructions */
+  .pow-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .pow-modal {
+    max-width: 520px;
+    width: 92%;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.18);
+    padding: 16px 18px 14px;
+  }
+
+  .pow-modal-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .pow-modal-sub {
+    font-size: 0.85rem;
+    color: var(--pow-muted);
+    margin-bottom: 10px;
+  }
+
+  .pow-modal-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+
+  .pow-modal-text {
+    font-size: 0.8rem;
+    color: var(--pow-text);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .pow-modal-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .pow-modal-footer button {
+    padding: 6px 16px;
+    font-size: 0.9rem;
+  }
+
+  /* ---------- Mobile tweaks ---------- */
+  @media (max-width: 768px) {
     .pow-header-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-    }
-
-    .pow-mode-buttons {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border-radius: 999px;
-      border: none;
-      padding: 6px 14px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: #e4e6f0;
-      color: var(--pow-text);
-      font-weight: 500;
-      transition: background 0.15s, transform 0.05s;
-    }
-
-    button:hover { background: #d5d7e5; }
-    button:active { transform: scale(0.97); }
-
-    button.pow-primary {
-      background: var(--pow-accent);
-      color: #fff;
-    }
-    button.pow-primary:hover { background: #147187; }
-
-    button.pow-ghost {
-      background: transparent;
-      border: 1px solid #cfd3e5;
-    }
-
-    button.pow-danger {
-      background: var(--pow-danger);
-      color: #fff;
-    }
-    button.pow-danger:hover { background: #962d22; }
-
-    .pow-status-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 16px;
-      background: var(--pow-accent-soft);
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-    }
-
-    .pow-status-item { min-width: 120px; }
-
-    .pow-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--pow-muted);
-      margin-bottom: 2px;
-    }
-
-    .pow-value { font-weight: 600; }
-
-    .pow-play-area {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 8px;
-      align-items: stretch;
-    }
-
-    .pow-card {
-      flex: 1;
-      background: var(--pow-card-bg);
-      border-radius: 20px;
-      padding: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-width: 0;
-    }
-
-    .pow-word {
-      font-size: 2.1rem;
-      font-weight: 700;
-      text-align: center;
-      word-wrap: break-word;
-    }
-
-    .pow-image-wrapper {
-      position: relative;
-      width: 100%;
-      padding-top: 70%;
-      overflow: hidden;
-      border-radius: 16px;
-      background: #f8f8fc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .pow-image-wrapper img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-
-    .pow-relation-card {
-      flex: 0 0 90px;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
-    }
-
-    .pow-relation-label {
-      width: 100%;
-      text-align: center;
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #333;
-      word-wrap: break-word;
-    }
-
-    .pow-relation-not {
-      color: var(--pow-danger);
-      font-size: 2.2rem;
-      letter-spacing: 0.05em;
-    }
-
-    .pow-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .pow-actions button {
-      flex: 1;
-      padding: 12px 18px;
       font-size: 1.1rem;
     }
 
-    .pow-actions .false {
-      background: #f7d7d7;
-      color: #b03030;
+    .pow-play-area {
+      gap: 6px;
+      margin-bottom: 6px;
     }
-    .pow-actions .false:hover { background: #f1c0c0; }
 
-    .pow-actions .true {
-      background: #d5f3dd;
-      color: #227a3b;
+    .pow-card {
+      padding: 8px;
     }
-    .pow-actions .true:hover { background: #beeac9; }
+
+    .pow-word {
+      font-size: 1.4rem;
+    }
+
+    .pow-image-wrapper {
+      padding-top: 55%; /* reduce height so buttons stay in view */
+    }
+
+    .pow-relation-card {
+      flex: 0 0 70px;
+    }
+
+    .pow-relation-label {
+      font-size: 1.4rem;
+    }
+
+    .pow-relation-not {
+      font-size: 1.7rem;
+    }
+
+    .pow-actions {
+      margin-bottom: 6px;
+    }
+
+    .pow-actions button {
+      padding: 10px 8px;
+      font-size: 0.95rem;
+    }
+
+    .pow-status-bar {
+      gap: 4px;
+      padding: 4px;
+      font-size: 0.75rem;
+    }
+
+    .pow-status-item {
+      min-width: 90px;
+    }
 
     .pow-helper-text {
-      font-size: 0.75rem;
-      color: var(--pow-muted);
-      margin-bottom: 8px;
-    }
-
-    .pow-summary {
-      background: var(--pow-card-bg);
-      border-radius: 16px;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-      font-size: 0.9rem;
-    }
-
-    .pow-summary-title {
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .pow-summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 3px;
-    }
-
-    .pow-summary-highlight {
-      color: var(--pow-success);
-      font-weight: 600;
-    }
-
-    .pow-leaderboard-section {
-      background: var(--pow-card-bg);
-      border-radius: 16px;
-      padding: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-      font-size: 0.85rem;
-    }
-
-    .pow-leaderboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pow-leaderboard-title { font-weight: 600; }
-
-    .pow-leaderboard-mode-buttons button {
-      padding: 4px 10px;
-      font-size: 0.8rem;
-    }
-
-    .pow-leaderboard-table-wrapper {
-      max-height: 280px;
-      overflow: auto;
-      border-radius: 12px;
-      border: 1px solid #e0e2f0;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-
-    thead {
-      position: sticky;
-      top: 0;
-      background: #f5f6ff;
-      z-index: 1;
-    }
-
-    th, td {
-      padding: 4px 6px;
-      text-align: left;
-      border-bottom: 1px solid #f0f1f7;
-    }
-
-    th {
-      font-weight: 600;
-      color: var(--pow-muted);
-      font-size: 0.75rem;
-    }
-
-    tbody tr:nth-child(odd) { background: #fafbff; }
-
-    .pow-tag {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 999px;
       font-size: 0.7rem;
-      background: #e0f3f7;
-      color: #256773;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .pow-play-area {
+      gap: 4px;
+      margin-bottom: 4px;
     }
 
-    .pow-message {
-      margin-top: 4px;
-      font-size: 0.8rem;
-      color: var(--pow-muted);
+    .pow-card {
+      padding: 6px;
+      border-radius: 16px;
     }
 
-    .pow-message.highlight {
-      color: var(--pow-success);
+    .pow-word {
+      font-size: 1.1rem;
     }
 
-    .pow-warning {
-      font-size: 0.8rem;
-      color: var(--pow-danger);
-      margin-bottom: 6px;
-      display: none;
+    .pow-image-wrapper {
+      padding-top: 40%; /* even shallower image card on very small screens */
     }
 
-    /* Modal for instructions */
-    .pow-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
+    .pow-relation-card {
+      flex: 0 0 60px;
     }
 
-    .pow-modal {
-      max-width: 520px;
-      width: 92%;
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 8px 26px rgba(0,0,0,0.18);
-      padding: 16px 18px 14px;
-    }
-
-    .pow-modal-title {
+    .pow-relation-label {
       font-size: 1.2rem;
-      font-weight: 700;
+    }
+
+    .pow-relation-not {
+      font-size: 1.4rem;
+    }
+
+    .pow-status-bar {
+      font-size: 0.7rem;
       margin-bottom: 6px;
     }
 
-    .pow-modal-sub {
-      font-size: 0.85rem;
-      color: var(--pow-muted);
-      margin-bottom: 10px;
+    .pow-status-item {
+      min-width: 80px;
     }
 
-    .pow-modal-section-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-top: 8px;
-      margin-bottom: 4px;
+    .pow-actions {
+      margin-bottom: 6px;
     }
 
-    .pow-modal-text {
-      font-size: 0.8rem;
-      color: var(--pow-text);
-      line-height: 1.4;
-      margin-bottom: 4px;
-    }
-
-    .pow-modal-footer {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .pow-modal-footer button {
-      padding: 6px 16px;
+    .pow-actions button {
       font-size: 0.9rem;
+      padding: 8px 6px;
     }
+  }
+</style>
 
-    @media (max-width: 768px) {
-      .pow-play-area {
-        flex-direction: row;
-        gap: 6px;
-      }
-      .pow-card {
-        padding: 8px;
-      }
-      .pow-word {
-        font-size: 1.5rem;
-      }
-      .pow-relation-label {
-        font-size: 1.4rem;
-      }
-      .pow-actions button {
-        padding: 10px 10px;
-        font-size: 1rem;
-      }
-      .pow-header { align-items: flex-start; }
-    }
-
-    /* Keep horizontal play-area even on very small screens */
-    @media (max-width: 520px) {
-      .pow-play-area {
-        flex-direction: row;
-      }
-      .pow-relation-card {
-        flex: 0 0 70px;
-      }
-      .pow-header-title {
-        font-size: 1.1rem;
-      }
-    }
-  </style>
 </head>
 <body>
 <div id="pow-decision-game">
   <div class="pow-header">
     <div class="pow-header-title">Test and Improve Your Decision Making</div>
     <div class="pow-mode-buttons">
-      <button id="modePractice" class="pow-ghost">Practice</button>
-      <button id="modeShort" class="pow-primary">Short (10)</button>
-      <button id="modeLong" class="pow-ghost">Long (20)</button>
-      <button id="startButton" class="pow-primary">Start</button>
-      <button id="stopButton" class="pow-danger" disabled>Stop</button>
+      <button id="modeToggleButton" class="pow-ghost">Mode: Short (10)</button>
+      <button id="startStopButton" class="pow-primary">Start</button>
     </div>
   </div>
 
@@ -423,6 +502,28 @@
     For best experience on mobile, rotate your device to landscape.
   </div>
 
+  <div class="pow-play-area">
+    <div class="pow-card">
+      <div class="pow-word" id="wordDisplay">Press Start</div>
+    </div>
+
+    <div class="pow-card pow-relation-card">
+      <div class="pow-relation-label" id="relationLabel">IS</div>
+    </div>
+
+    <div class="pow-card">
+      <div class="pow-image-wrapper">
+        <img id="pictureDisplay" alt="Decision picture" />
+      </div>
+    </div>
+  </div>
+
+  <div class="pow-actions">
+    <button id="falseButton" class="false">False</button>
+    <button id="trueButton" class="true">True</button>
+  </div>
+
+  <!-- Status bar after True / False -->
   <div class="pow-status-bar">
     <div class="pow-status-item">
       <div class="pow-label">Mode</div>
@@ -450,32 +551,10 @@
     </div>
   </div>
 
-  <div class="pow-play-area">
-    <div class="pow-card">
-      <div class="pow-label">Word</div>
-      <div class="pow-word" id="wordDisplay">Press Start</div>
-    </div>
-
-    <div class="pow-card pow-relation-card">
-      <div class="pow-relation-label" id="relationLabel">IS</div>
-    </div>
-
-    <div class="pow-card">
-      <div class="pow-label">Picture</div>
-      <div class="pow-image-wrapper">
-        <img id="pictureDisplay" alt="Decision picture" />
-      </div>
-    </div>
-  </div>
-
-  <div class="pow-actions">
-    <button id="falseButton" class="false">False</button>
-    <button id="trueButton" class="true">True</button>
-  </div>
-
   <div class="pow-helper-text" id="helperText">
-    Choose a mode, press <strong>Start</strong>, then answer:<br />
-    <strong>True</strong> if the middle word (“IS” or “NOT”) makes the sentence correct.<br />
+    Tap <strong>Mode</strong> to switch between Practice / Short / Long, then press
+    <strong>Start</strong>.<br />
+    Answer <strong>True</strong> if the middle word (“IS” or “NOT”) makes the sentence correct.<br />
     On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
   </div>
 
@@ -522,9 +601,10 @@
           Ranked by fewest mistakes, then total time, then average reaction.
         </div>
       </div>
-      <div class="pow-leaderboard-mode-buttons">
-        <button id="leaderboardShortBtn" class="pow-primary">Short</button>
-        <button id="leaderboardLongBtn" class="pow-ghost">Long</button>
+      <div>
+        <button id="leaderboardToggleButton" class="pow-primary">
+          View: Short
+        </button>
       </div>
     </div>
     <div class="pow-leaderboard-table-wrapper">
@@ -623,11 +703,8 @@
   const STORAGE_KEY = "powDecisionGameStats_v1";
 
   const el = {
-    modePractice: document.getElementById("modePractice"),
-    modeShort: document.getElementById("modeShort"),
-    modeLong: document.getElementById("modeLong"),
-    startButton: document.getElementById("startButton"),
-    stopButton: document.getElementById("stopButton"),
+    modeToggleButton: document.getElementById("modeToggleButton"),
+    startStopButton: document.getElementById("startStopButton"),
     statusMode: document.getElementById("statusMode"),
     statusQuestion: document.getElementById("statusQuestion"),
     statusTotalTime: document.getElementById("statusTotalTime"),
@@ -650,14 +727,13 @@
     summaryMessage: document.getElementById("summaryMessage"),
     leaderboardBody: document.getElementById("leaderboardBody"),
     leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
-    leaderboardShortBtn: document.getElementById("leaderboardShortBtn"),
-    leaderboardLongBtn: document.getElementById("leaderboardLongBtn"),
+    leaderboardToggleButton: document.getElementById("leaderboardToggleButton"),
     orientationWarning: document.getElementById("orientationWarning"),
     instructionsModal: document.getElementById("instructionsModal"),
     instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
   };
 
-  // ---------- Audio (no external files, generated tones) ----------
+  // ---------- Audio ----------
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
 
@@ -726,7 +802,7 @@
   }
 
   // ---------- Game state ----------
-  let currentMode = "short";
+  let currentMode = "short"; // practice | short | long
   let targetQuestions = 10;
   let questionCount = 0;
   let correctCount = 0;
@@ -788,6 +864,11 @@
         parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
       if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
       if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
+
+      if (parsed.playerInitials === "???") {
+        parsed.playerInitials = "";
+      }
+
       return parsed;
     } catch (e) {
       return {
@@ -858,9 +939,9 @@
     el.wordDisplay.textContent = "Press Start";
     el.relationLabel.textContent = "IS";
     el.relationLabel.classList.remove("pow-relation-not");
-    el.stopButton.disabled = true;
 
-    // NEW: show a random image as a clean placeholder instead of broken icon
+    el.startStopButton.textContent = "Start";
+
     if (ITEMS.length > 0) {
       const idx = Math.floor(Math.random() * ITEMS.length);
       const item = ITEMS[idx];
@@ -873,27 +954,27 @@
   }
 
   function applyModeUI() {
-    el.modePractice.classList.toggle("pow-primary", currentMode === "practice");
-    el.modePractice.classList.toggle("pow-ghost", currentMode !== "practice");
-    el.modeShort.classList.toggle("pow-primary", currentMode === "short");
-    el.modeShort.classList.toggle("pow-ghost", currentMode !== "short");
-    el.modeLong.classList.toggle("pow-primary", currentMode === "long");
-    el.modeLong.classList.toggle("pow-ghost", currentMode !== "long");
-
+    let label;
     if (currentMode === "practice") {
+      label = "Mode: Practice";
       el.statusMode.textContent = "Practice";
       el.statusQuestion.textContent = "0 / ∞";
     } else if (currentMode === "short") {
+      label = "Mode: Short (10)";
       el.statusMode.textContent = "Short (10)";
       el.statusQuestion.textContent = "0 / 10";
-    } else if (currentMode === "long") {
+    } else {
+      label = "Mode: Long (20)";
       el.statusMode.textContent = "Long (20)";
       el.statusQuestion.textContent = "0 / 20";
     }
+    el.modeToggleButton.textContent = label;
   }
 
   function setMode(mode) {
-    if (runActive || countdownActive) stopRun(true);
+    if (runActive || countdownActive) {
+      stopRun(true);
+    }
     currentMode = mode;
     if (mode === "practice") {
       targetQuestions = Infinity;
@@ -904,6 +985,16 @@
     }
     resetState();
     applyModeUI();
+  }
+
+  function cycleMode() {
+    if (currentMode === "practice") {
+      setMode("short");
+    } else if (currentMode === "short") {
+      setMode("long");
+    } else {
+      setMode("practice");
+    }
   }
 
   function prepareSequencesForRun() {
@@ -1067,28 +1158,45 @@
   }
 
   function ensureInitials() {
-    if (stats.playerInitials && stats.playerInitials.trim().length > 0) {
-      return stats.playerInitials;
+    const prev = (stats.playerInitials || "").trim().toUpperCase();
+    const hasValidPrev = prev && prev !== "???";
+    if (hasValidPrev) {
+      return prev;
     }
+
     let initials = "";
-    while (!initials) {
-      initials = (prompt("Enter your initials (1–4 characters):", "") || "")
-        .trim()
-        .toUpperCase();
-      if (initials.length === 0) {
-        if (!confirm("No initials entered. Try again?")) break;
-        else initials = "";
-      } else if (initials.length > 4) {
-        initials = initials.substring(0, 4);
+    while (true) {
+      const input = prompt("Enter your initials (1–4 characters):", "") || "";
+      initials = input.trim().toUpperCase();
+
+      if (!initials) {
+        if (!confirm("No initials entered. Try again?")) {
+          break;
+        }
+      } else {
+        if (initials.length > 4) initials = initials.substring(0, 4);
+        break;
       }
     }
-    stats.playerInitials = initials || "???";
-    saveStats();
-    return stats.playerInitials;
+
+    if (initials) {
+      stats.playerInitials = initials;
+      saveStats();
+      return initials;
+    }
+
+    if (hasValidPrev) {
+      return prev;
+    }
+
+    return "???";
   }
 
   function finalizeRun() {
     if (!currentMode || currentMode === "practice") return;
+    if (currentMode !== "practice" && isFinite(targetQuestions) && questionCount < targetQuestions) {
+      return;
+    }
 
     const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
     const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
@@ -1213,8 +1321,8 @@
     if (run.mode !== "practice") {
       if (isPersonalBest) {
         msg += (msg ? " " : "") + "Personal best for this mode!";
-      } else {
-        msg += (msg ? " " : "") + "Keep going to beat your best score.";
+      } else if (!msg) {
+        msg = "Keep going to beat your best score.";
       }
     }
     el.summaryMessage.textContent = msg;
@@ -1229,6 +1337,9 @@
 
     el.leaderboardModeLabel.textContent =
       modeKey === "short" ? "Short" : "Long";
+
+    el.leaderboardToggleButton.textContent =
+      "View: " + (modeKey === "short" ? "Short" : "Long");
 
     list.forEach((entry, index) => {
       const tr = document.createElement("tr");
@@ -1250,23 +1361,14 @@
 
       el.leaderboardBody.appendChild(tr);
     });
+  }
 
-    el.leaderboardShortBtn.classList.toggle(
-      "pow-primary",
-      modeKey === "short"
-    );
-    el.leaderboardShortBtn.classList.toggle(
-      "pow-ghost",
-      modeKey !== "short"
-    );
-    el.leaderboardLongBtn.classList.toggle(
-      "pow-primary",
-      modeKey === "long"
-    );
-    el.leaderboardLongBtn.classList.toggle(
-      "pow-ghost",
-      modeKey !== "long"
-    );
+  function toggleLeaderboardMode() {
+    if (leaderboardViewMode === "short") {
+      renderLeaderboard("long");
+    } else {
+      renderLeaderboard("short");
+    }
   }
 
   function handleOrientationWarning() {
@@ -1290,7 +1392,8 @@
 
     el.falseButton.disabled = true;
     el.trueButton.disabled = true;
-    el.stopButton.disabled = true;
+
+    el.startStopButton.textContent = "Stop";
 
     const steps = [3, 2, 1];
     let delay = 500;
@@ -1317,7 +1420,8 @@
     runActive = true;
     el.falseButton.disabled = false;
     el.trueButton.disabled = false;
-    el.stopButton.disabled = false;
+
+    el.startStopButton.textContent = "Stop";
 
     sessionStartTime = performance.now();
     timerInterval = setInterval(updateTimer, 50);
@@ -1338,12 +1442,14 @@
     runActive = false;
     clearInterval(timerInterval);
     timerInterval = null;
-    el.stopButton.disabled = true;
     currentQuestionActive = false;
 
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    el.startStopButton.textContent = "Start";
+
     if (currentMode === "practice") {
-      const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
-      const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
       showSummary(
         {
           mode: currentMode,
@@ -1359,26 +1465,40 @@
       );
       playFinishBell();
     } else {
-      finalizeRun();
+      if (questionCount < targetQuestions) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs[currentMode]?.bestRun || null,
+          false,
+          "Run stopped before completion. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
     }
   }
 
-  // ---------- Event wiring ----------
-  el.modePractice.addEventListener("click", function () { setMode("practice"); });
-  el.modeShort.addEventListener("click", function () { setMode("short"); });
-  el.modeLong.addEventListener("click", function () { setMode("long"); });
+  el.modeToggleButton.addEventListener("click", cycleMode);
 
-  el.startButton.addEventListener("click", function () {
-    if (countdownActive) return;
-    if (runActive) stopRun(true);
-    resetState();
-    if (currentMode !== "practice") {
-      prepareSequencesForRun();
+  el.startStopButton.addEventListener("click", function () {
+    if (!runActive && !countdownActive) {
+      resetState();
+      if (currentMode !== "practice") {
+        prepareSequencesForRun();
+      }
+      startCountdownThenRun();
+    } else {
+      stopRun(true);
     }
-    startCountdownThenRun();
   });
-
-  el.stopButton.addEventListener("click", function () { stopRun(true); });
 
   el.falseButton.addEventListener("click", function () { handleAnswer(false); });
   el.trueButton.addEventListener("click", function () { handleAnswer(true); });
@@ -1394,23 +1514,15 @@
     }
   });
 
-  el.leaderboardShortBtn.addEventListener("click", function () {
-    renderLeaderboard("short");
-  });
-  el.leaderboardLongBtn.addEventListener("click", function () {
-    renderLeaderboard("long");
-  });
-
+  el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
   window.addEventListener("resize", handleOrientationWarning);
 
-  // Instructions modal close
   el.instructionsCloseBtn.addEventListener("click", function () {
     el.instructionsModal.style.display = "none";
   });
 
-  // ---------- Init ----------
   applyModeUI();
-  resetState();          // now sets a clean random image
+  resetState();
   renderLeaderboard("short");
   handleOrientationWarning();
 })();
