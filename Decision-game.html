@@ -4,489 +4,477 @@
   <meta charset="UTF-8" />
   <title>People of the World – Decision Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <style>
-  :root {
-    --pow-bg: #f4f5fb;
-    --pow-accent: #1c8fa9;
-    --pow-accent-soft: #e0f3f7;
-    --pow-text: #222;
-    --pow-muted: #666;
-    --pow-card-bg: #ffffff;
-    --pow-danger: #c0392b;
-    --pow-success: #27ae60;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
-    background: var(--pow-bg);
-    color: var(--pow-text);
-  }
-
-  #pow-decision-game {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 12px;
-  }
-
-  .pow-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-  }
-
-  .pow-header-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-  }
-
-  .pow-mode-buttons {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  button {
-    border-radius: 999px;
-    border: none;
-    padding: 6px 14px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    background: #e4e6f0;
-    color: var(--pow-text);
-    font-weight: 500;
-    transition: background 0.15s, transform 0.05s;
-    white-space: nowrap;
-  }
-
-  button:hover { background: #d5d7e5; }
-  button:active { transform: scale(0.97); }
-
-  button.pow-primary {
-    background: var(--pow-accent);
-    color: #fff;
-  }
-  button.pow-primary:hover { background: #147187; }
-
-  button.pow-ghost {
-    background: transparent;
-    border: 1px solid #cfd3e5;
-  }
-
-  button.pow-danger {
-    background: var(--pow-danger);
-    color: #fff;
-  }
-  button.pow-danger:hover { background: #962d22; }
-
-  .pow-status-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 6px;
-    border-radius: 16px;
-    background: var(--pow-accent-soft);
-    margin-bottom: 8px;
-    font-size: 0.8rem;
-  }
-
-  .pow-status-item {
-    min-width: 110px;
-  }
-
-  .pow-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--pow-muted);
-    margin-bottom: 2px;
-    /* hidden from player */
-    display: none;
-  }
-
-  .pow-value { font-weight: 600; }
-
-  .pow-play-area {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 8px;
-    align-items: stretch;
-  }
-
-  .pow-card {
-    flex: 1;
-    background: var(--pow-card-bg);
-    border-radius: 20px;
-    padding: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-  }
-
-  .pow-word {
-    font-size: 2.1rem;
-    font-weight: 700;
-    text-align: center;
-    word-wrap: break-word;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pow-image-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 70%; /* overridden on mobile to shrink height */
-    overflow: hidden;
-    border-radius: 16px;
-    background: #f8f8fc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .pow-image-wrapper img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .pow-relation-card {
-    flex: 0 0 90px;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-  }
-
-  .pow-relation-label {
-    width: 100%;
-    text-align: center;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #333;
-    word-wrap: break-word;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pow-relation-not {
-    color: var(--pow-danger);
-    font-size: 2.2rem;
-    letter-spacing: 0.05em;
-  }
-
-  .pow-actions {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-
-  .pow-actions button {
-    flex: 1;
-    padding: 12px 18px;
-    font-size: 1.1rem;
-  }
-
-  .pow-actions .false {
-    background: #f7d7d7;
-    color: #b03030;
-  }
-  .pow-actions .false:hover { background: #f1c0c0; }
-
-  .pow-actions .true {
-    background: #d5f3dd;
-    color: #227a3b;
-  }
-  .pow-actions .true:hover { background: #beeac9; }
-
-  .pow-helper-text {
-    font-size: 0.75rem;
-    color: var(--pow-muted);
-    margin-bottom: 8px;
-  }
-
-  .pow-summary {
-    background: var(--pow-card-bg);
-    border-radius: 16px;
-    padding: 10px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-    font-size: 0.9rem;
-  }
-
-  .pow-summary-title {
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-
-  .pow-summary-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 3px;
-  }
-
-  .pow-summary-highlight {
-    color: var(--pow-success);
-    font-weight: 600;
-  }
-
-  .pow-leaderboard-section {
-    background: var(--pow-card-bg);
-    border-radius: 16px;
-    padding: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-    font-size: 0.85rem;
-  }
-
-  .pow-leaderboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .pow-leaderboard-title { font-weight: 600; }
-
-  .pow-leaderboard-table-wrapper {
-    max-height: 280px;
-    overflow: auto;
-    border-radius: 12px;
-    border: 1px solid #e0e2f0;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-  }
-
-  thead {
-    position: sticky;
-    top: 0;
-    background: #f5f6ff;
-    z-index: 1;
-  }
-
-  th, td {
-    padding: 4px 6px;
-    text-align: left;
-    border-bottom: 1px solid #f0f1f7;
-  }
-
-  th {
-    font-weight: 600;
-    color: var(--pow-muted);
-    font-size: 0.75rem;
-  }
-
-  tbody tr:nth-child(odd) { background: #fafbff; }
-
-  .pow-tag {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    background: #e0f3f7;
-    color: #256773;
-  }
-
-  .pow-message {
-    margin-top: 4px;
-    font-size: 0.8rem;
-    color: var(--pow-muted);
-  }
-
-  .pow-message.highlight {
-    color: var(--pow-success);
-  }
-
-  .pow-warning {
-    font-size: 0.8rem;
-    color: var(--pow-danger);
-    margin-bottom: 6px;
-    display: none;
-  }
-
-  /* Modal for instructions */
-  .pow-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-
-  .pow-modal {
-    max-width: 520px;
-    width: 92%;
-    background: #ffffff;
-    border-radius: 18px;
-    box-shadow: 0 8px 26px rgba(0,0,0,0.18);
-    padding: 16px 18px 14px;
-  }
-
-  .pow-modal-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .pow-modal-sub {
-    font-size: 0.85rem;
-    color: var(--pow-muted);
-    margin-bottom: 10px;
-  }
-
-  .pow-modal-section-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-top: 8px;
-    margin-bottom: 4px;
-  }
-
-  .pow-modal-text {
-    font-size: 0.8rem;
-    color: var(--pow-text);
-    line-height: 1.4;
-    margin-bottom: 4px;
-  }
-
-  .pow-modal-footer {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .pow-modal-footer button {
-    padding: 6px 16px;
-    font-size: 0.9rem;
-  }
-
-  /* ---------- Mobile tweaks ---------- */
-  @media (max-width: 768px) {
-    .pow-header-title {
-      font-size: 1.1rem;
+  <style>
+    :root {
+      --pow-bg: #f4f5fb;
+      --pow-accent: #1c8fa9;
+      --pow-accent-soft: #e0f3f7;
+      --pow-text: #222;
+      --pow-muted: #666;
+      --pow-card-bg: #ffffff;
+      --pow-danger: #c0392b;
+      --pow-success: #27ae60;
     }
 
-    .pow-play-area {
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--pow-bg);
+      color: var(--pow-text);
+    }
+
+    #pow-decision-game {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .pow-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pow-header-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .pow-mode-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #e4e6f0;
+      color: var(--pow-text);
+      font-weight: 500;
+      transition: background 0.15s, transform 0.05s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #d5d7e5; }
+    button:active { transform: scale(0.97); }
+
+    button.pow-primary {
+      background: var(--pow-accent);
+      color: #fff;
+    }
+    button.pow-primary:hover { background: #147187; }
+
+    button.pow-ghost {
+      background: transparent;
+      border: 1px solid #cfd3e5;
+    }
+
+    button.pow-danger {
+      background: var(--pow-danger);
+      color: #fff;
+    }
+    button.pow-danger:hover { background: #962d22; }
+
+    .pow-status-bar {
+      display: flex;
+      flex-wrap: wrap;
       gap: 6px;
-      margin-bottom: 6px;
+      padding: 6px;
+      border-radius: 16px;
+      background: var(--pow-accent-soft);
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+
+    .pow-status-item {
+      min-width: 110px;
+    }
+
+    .pow-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--pow-muted);
+      margin-bottom: 2px;
+      /* hide labels from player */
+      display: none;
+    }
+
+    .pow-value { font-weight: 600; }
+
+    .pow-play-area {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      align-items: stretch;
     }
 
     .pow-card {
+      flex: 1;
+      background: var(--pow-card-bg);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .pow-word {
+      font-size: 2.1rem;
+      font-weight: 700;
+      text-align: center;
+      word-wrap: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pow-image-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 70%;
+      overflow: hidden;
+      border-radius: 16px;
+      background: #f8f8fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pow-image-wrapper img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .pow-relation-card {
+      flex: 0 0 140px; /* wider so "is not" fits comfortably */
+      align-items: center;
+      justify-content: center;
       padding: 8px;
     }
 
-    .pow-word {
-      font-size: 1.4rem;
-    }
-
-    .pow-image-wrapper {
-      padding-top: 55%; /* reduce height so buttons stay in view */
-    }
-
-    .pow-relation-card {
-      flex: 0 0 70px;
-    }
-
     .pow-relation-label {
-      font-size: 1.4rem;
+      width: 100%;
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #333;
+      word-wrap: break-word;
+      white-space: normal;   /* allow "is not" to wrap to two lines if needed */
+      line-height: 1.1;
     }
 
     .pow-relation-not {
-      font-size: 1.7rem;
+      color: var(--pow-danger);
     }
 
     .pow-actions {
-      margin-bottom: 6px;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .pow-actions button {
-      padding: 10px 8px;
-      font-size: 0.95rem;
-    }
-
-    .pow-status-bar {
-      gap: 4px;
-      padding: 4px;
-      font-size: 0.75rem;
-    }
-
-    .pow-status-item {
-      min-width: 90px;
-    }
-
-    .pow-helper-text {
-      font-size: 0.7rem;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .pow-play-area {
-      gap: 4px;
-      margin-bottom: 4px;
-    }
-
-    .pow-card {
-      padding: 6px;
-      border-radius: 16px;
-    }
-
-    .pow-word {
+      flex: 1;
+      padding: 12px 18px;
       font-size: 1.1rem;
     }
 
-    .pow-image-wrapper {
-      padding-top: 40%; /* even shallower image card on very small screens */
+    .pow-actions .false {
+      background: #f7d7d7;
+      color: #b03030;
+    }
+    .pow-actions .false:hover { background: #f1c0c0; }
+
+    .pow-actions .true {
+      background: #d5f3dd;
+      color: #227a3b;
+    }
+    .pow-actions .true:hover { background: #beeac9; }
+
+    .pow-helper-text {
+      font-size: 0.75rem;
+      color: var(--pow-muted);
+      margin-bottom: 8px;
     }
 
-    .pow-relation-card {
-      flex: 0 0 60px;
-    }
-
-    .pow-relation-label {
-      font-size: 1.2rem;
-    }
-
-    .pow-relation-not {
-      font-size: 1.4rem;
-    }
-
-    .pow-status-bar {
-      font-size: 0.7rem;
-      margin-bottom: 6px;
-    }
-
-    .pow-status-item {
-      min-width: 80px;
-    }
-
-    .pow-actions {
-      margin-bottom: 6px;
-    }
-
-    .pow-actions button {
+    .pow-summary {
+      background: var(--pow-card-bg);
+      border-radius: 16px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
       font-size: 0.9rem;
-      padding: 8px 6px;
     }
-  }
-</style>
 
+    .pow-summary-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .pow-summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .pow-summary-highlight {
+      color: var(--pow-success);
+      font-weight: 600;
+    }
+
+    .pow-leaderboard-section {
+      background: var(--pow-card-bg);
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      font-size: 0.85rem;
+    }
+
+    .pow-leaderboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pow-leaderboard-title { font-weight: 600; }
+
+    .pow-leaderboard-table-wrapper {
+      max-height: 280px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid #e0e2f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #f5f6ff;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid #f0f1f7;
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--pow-muted);
+      font-size: 0.75rem;
+    }
+
+    tbody tr:nth-child(odd) { background: #fafbff; }
+
+    .pow-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #e0f3f7;
+      color: #256773;
+    }
+
+    .pow-message {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--pow-muted);
+    }
+
+    .pow-message.highlight {
+      color: var(--pow-success);
+    }
+
+    .pow-warning {
+      font-size: 0.8rem;
+      color: var(--pow-danger);
+      margin-bottom: 6px;
+      display: none;
+    }
+
+    /* Modal for instructions */
+    .pow-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .pow-modal {
+      max-width: 520px;
+      width: 92%;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.18);
+      padding: 16px 18px 14px;
+    }
+
+    .pow-modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .pow-modal-sub {
+      font-size: 0.85rem;
+      color: var(--pow-muted);
+      margin-bottom: 10px;
+    }
+
+    .pow-modal-section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-text {
+      font-size: 0.8rem;
+      color: var(--pow-text);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .pow-modal-footer button {
+      padding: 6px 16px;
+      font-size: 0.9rem;
+    }
+
+    /* ---------- Mobile tweaks ---------- */
+    @media (max-width: 768px) {
+      .pow-header-title {
+        font-size: 1.1rem;
+      }
+
+      .pow-play-area {
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .pow-card {
+        padding: 8px;
+      }
+
+      .pow-word {
+        font-size: 1.4rem;
+      }
+
+      .pow-image-wrapper {
+        padding-top: 55%; /* shallower so buttons stay in view */
+      }
+
+      .pow-relation-card {
+        flex: 0 0 110px;
+      }
+
+      .pow-relation-label {
+        font-size: 1.4rem;
+      }
+
+      .pow-actions {
+        margin-bottom: 6px;
+      }
+
+      .pow-actions button {
+        padding: 10px 8px;
+        font-size: 0.95rem;
+      }
+
+      .pow-status-bar {
+        gap: 4px;
+        padding: 4px;
+        font-size: 0.75rem;
+      }
+
+      .pow-status-item {
+        min-width: 90px;
+      }
+
+      .pow-helper-text {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .pow-play-area {
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+
+      .pow-card {
+        padding: 6px;
+        border-radius: 16px;
+      }
+
+      .pow-word {
+        font-size: 1.1rem;
+      }
+
+      .pow-image-wrapper {
+        padding-top: 40%; /* even shallower on very small screens */
+      }
+
+      .pow-relation-card {
+        flex: 0 0 90px;
+      }
+
+      .pow-relation-label {
+        font-size: 1.2rem;
+      }
+
+      .pow-status-bar {
+        font-size: 0.7rem;
+        margin-bottom: 6px;
+      }
+
+      .pow-status-item {
+        min-width: 80px;
+      }
+
+      .pow-actions {
+        margin-bottom: 6px;
+      }
+
+      .pow-actions button {
+        font-size: 0.9rem;
+        padding: 8px 6px;
+      }
+    }
+  </style>
 </head>
 <body>
 <div id="pow-decision-game">
@@ -502,19 +490,23 @@
     For best experience on mobile, rotate your device to landscape.
   </div>
 
+  <!-- PLAY AREA: picture (left) – relation (middle) – word (right) -->
   <div class="pow-play-area">
-    <div class="pow-card">
-      <div class="pow-word" id="wordDisplay">Press Start</div>
-    </div>
-
-    <div class="pow-card pow-relation-card">
-      <div class="pow-relation-label" id="relationLabel">IS</div>
-    </div>
-
+    <!-- Picture LEFT -->
     <div class="pow-card">
       <div class="pow-image-wrapper">
         <img id="pictureDisplay" alt="Decision picture" />
       </div>
+    </div>
+
+    <!-- Relation MIDDLE -->
+    <div class="pow-card pow-relation-card">
+      <div class="pow-relation-label" id="relationLabel">is</div>
+    </div>
+
+    <!-- Word RIGHT -->
+    <div class="pow-card">
+      <div class="pow-word" id="wordDisplay">Press Start</div>
     </div>
   </div>
 
@@ -523,7 +515,6 @@
     <button id="trueButton" class="true">True</button>
   </div>
 
-  <!-- Status bar after True / False -->
   <div class="pow-status-bar">
     <div class="pow-status-item">
       <div class="pow-label">Mode</div>
@@ -554,7 +545,9 @@
   <div class="pow-helper-text" id="helperText">
     Tap <strong>Mode</strong> to switch between Practice / Short / Long, then press
     <strong>Start</strong>.<br />
-    Answer <strong>True</strong> if the middle word (“IS” or “NOT”) makes the sentence correct.<br />
+    You now see a <strong>picture on the left</strong>, a middle box that says
+    <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br />
+    Answer <strong>True</strong> if that full sentence is correct.<br />
     On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
   </div>
 
@@ -636,8 +629,9 @@
 
     <div class="pow-modal-section-title">How it works</div>
     <div class="pow-modal-text">
-      You see a <strong>word</strong> on the left, a <strong>picture</strong> on the right,
-      and the middle word is either <strong>“IS”</strong> or <strong style="color:#c0392b;">“NOT”</strong>.
+      You see a <strong>picture on the left</strong>, a middle box that says
+      <strong>“is”</strong> or <strong style="color:#c0392b;">“is not”</strong>,
+      and a <strong>word on the right</strong>.
     </div>
     <div class="pow-modal-text">
       Your job is to decide if the full sentence is <strong>true or false</strong>.
@@ -733,18 +727,14 @@
     instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
   };
 
-  // ---------- Audio ----------
+  /* ---- Audio ---- */
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
 
   function getAudioCtx() {
     if (!AudioCtx) return null;
     if (!audioCtx) {
-      try {
-        audioCtx = new AudioCtx();
-      } catch (e) {
-        audioCtx = null;
-      }
+      try { audioCtx = new AudioCtx(); } catch (e) { audioCtx = null; }
     }
     return audioCtx;
   }
@@ -763,7 +753,7 @@
       const now = ctx.currentTime;
       osc.start(now);
       osc.stop(now + duration);
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
   }
 
   function playCountdownBeep(stepIndex) {
@@ -798,10 +788,10 @@
       const now = ctx.currentTime;
       osc.start(now);
       osc.stop(now + 0.18);
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
   }
 
-  // ---------- Game state ----------
+  /* ---- Game state ---- */
   let currentMode = "short"; // practice | short | long
   let targetQuestions = 10;
   let questionCount = 0;
@@ -865,9 +855,7 @@
       if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
       if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
 
-      if (parsed.playerInitials === "???") {
-        parsed.playerInitials = "";
-      }
+      if (parsed.playerInitials === "???") parsed.playerInitials = "";
 
       return parsed;
     } catch (e) {
@@ -937,7 +925,7 @@
     el.summaryPanel.style.display = "none";
     el.summaryMessage.textContent = "";
     el.wordDisplay.textContent = "Press Start";
-    el.relationLabel.textContent = "IS";
+    el.relationLabel.textContent = "is";
     el.relationLabel.classList.remove("pow-relation-not");
 
     el.startStopButton.textContent = "Start";
@@ -1098,10 +1086,10 @@
     el.pictureDisplay.alt = imageItem.label;
 
     if (isNot) {
-      el.relationLabel.textContent = "NOT";
+      el.relationLabel.textContent = "is not";
       el.relationLabel.classList.add("pow-relation-not");
     } else {
-      el.relationLabel.textContent = "IS";
+      el.relationLabel.textContent = "is";
       el.relationLabel.classList.remove("pow-relation-not");
     }
 
@@ -1160,9 +1148,7 @@
   function ensureInitials() {
     const prev = (stats.playerInitials || "").trim().toUpperCase();
     const hasValidPrev = prev && prev !== "???";
-    if (hasValidPrev) {
-      return prev;
-    }
+    if (hasValidPrev) return prev;
 
     let initials = "";
     while (true) {
@@ -1170,9 +1156,7 @@
       initials = input.trim().toUpperCase();
 
       if (!initials) {
-        if (!confirm("No initials entered. Try again?")) {
-          break;
-        }
+        if (!confirm("No initials entered. Try again?")) break;
       } else {
         if (initials.length > 4) initials = initials.substring(0, 4);
         break;
@@ -1185,10 +1169,7 @@
       return initials;
     }
 
-    if (hasValidPrev) {
-      return prev;
-    }
-
+    if (hasValidPrev) return prev;
     return "???";
   }
 
