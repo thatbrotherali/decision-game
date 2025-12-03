@@ -62,6 +62,7 @@
       color: var(--pow-text);
       font-weight: 500;
       transition: background 0.15s, transform 0.05s;
+      white-space: nowrap;
     }
 
     button:hover { background: #d5d7e5; }
@@ -87,15 +88,17 @@
     .pow-status-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px;
+      gap: 6px;
+      padding: 6px;
       border-radius: 16px;
       background: var(--pow-accent-soft);
       margin-bottom: 8px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
     }
 
-    .pow-status-item { min-width: 120px; }
+    .pow-status-item {
+      min-width: 110px;
+    }
 
     .pow-label {
       font-size: 0.7rem;
@@ -103,6 +106,8 @@
       letter-spacing: 0.04em;
       color: var(--pow-muted);
       margin-bottom: 2px;
+      /* Hide labels for Word/Picture from player */
+      display: none;
     }
 
     .pow-value { font-weight: 600; }
@@ -131,6 +136,9 @@
       font-weight: 700;
       text-align: center;
       word-wrap: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .pow-image-wrapper {
@@ -167,6 +175,9 @@
       font-weight: 700;
       color: #333;
       word-wrap: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .pow-relation-not {
@@ -367,35 +378,91 @@
     }
 
     @media (max-width: 768px) {
+      .pow-header-title {
+        font-size: 1.1rem;
+      }
+
       .pow-play-area {
         flex-direction: row;
         gap: 6px;
       }
+
       .pow-card {
         padding: 8px;
       }
+
       .pow-word {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
       }
+
+      .pow-relation-card {
+        flex: 0 0 70px;
+      }
+
       .pow-relation-label {
         font-size: 1.4rem;
       }
-      .pow-actions button {
-        padding: 10px 10px;
-        font-size: 1rem;
+
+      .pow-relation-not {
+        font-size: 1.7rem;
       }
-      .pow-header { align-items: flex-start; }
+
+      .pow-actions button {
+        padding: 10px 8px;
+        font-size: 0.95rem;
+      }
+
+      .pow-status-bar {
+        gap: 4px;
+        padding: 4px;
+        font-size: 0.75rem;
+      }
+
+      .pow-status-item {
+        min-width: 90px;
+      }
+
+      .pow-helper-text {
+        font-size: 0.7rem;
+      }
     }
 
     @media (max-width: 520px) {
       .pow-play-area {
         flex-direction: row;
       }
-      .pow-relation-card {
-        flex: 0 0 70px;
+
+      .pow-card {
+        padding: 6px;
       }
-      .pow-header-title {
-        font-size: 1.1rem;
+
+      .pow-word {
+        font-size: 1.2rem;
+      }
+
+      .pow-relation-card {
+        flex: 0 0 60px;
+      }
+
+      .pow-relation-label {
+        font-size: 1.2rem;
+      }
+
+      .pow-relation-not {
+        font-size: 1.4rem;
+      }
+
+      .pow-status-bar {
+        font-size: 0.7rem;
+      }
+
+      .pow-status-item {
+        min-width: 80px;
+      }
+
+      .pow-actions button {
+        font-size: 0.9rem;
+        padding: 8px 6px;
       }
     }
   </style>
@@ -411,12 +478,11 @@
   </div>
 
   <div id="orientationWarning" class="pow-warning">
-    For Mobile or PC.
+    For best experience on mobile, rotate your device to landscape.
   </div>
 
   <div class="pow-play-area">
     <div class="pow-card">
-      <div class="pow-label">Word</div>
       <div class="pow-word" id="wordDisplay">Press Start</div>
     </div>
 
@@ -425,7 +491,6 @@
     </div>
 
     <div class="pow-card">
-      <div class="pow-label">Picture</div>
       <div class="pow-image-wrapper">
         <img id="pictureDisplay" alt="Decision picture" />
       </div>
@@ -779,7 +844,6 @@
       if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
       if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
 
-      // Treat "???" as empty so we re-prompt for proper initials
       if (parsed.playerInitials === "???") {
         parsed.playerInitials = "";
       }
@@ -855,10 +919,8 @@
     el.relationLabel.textContent = "IS";
     el.relationLabel.classList.remove("pow-relation-not");
 
-    // Reset start/stop button label
     el.startStopButton.textContent = "Start";
 
-    // Show a random image initially so we don't see a broken placeholder
     if (ITEMS.length > 0) {
       const idx = Math.floor(Math.random() * ITEMS.length);
       const item = ITEMS[idx];
@@ -1111,7 +1173,6 @@
 
   function finalizeRun() {
     if (!currentMode || currentMode === "practice") return;
-    // Only record full runs
     if (currentMode !== "practice" && isFinite(targetQuestions) && questionCount < targetQuestions) {
       return;
     }
@@ -1311,7 +1372,6 @@
     el.falseButton.disabled = true;
     el.trueButton.disabled = true;
 
-    // Switch button label to Stop while countdown is active
     el.startStopButton.textContent = "Stop";
 
     const steps = [3, 2, 1];
@@ -1366,7 +1426,6 @@
     const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
     const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
 
-    // Reset button label
     el.startStopButton.textContent = "Start";
 
     if (currentMode === "practice") {
@@ -1385,7 +1444,6 @@
       );
       playFinishBell();
     } else {
-      // Only record if full run; else show summary but don't record
       if (questionCount < targetQuestions) {
         showSummary(
           {
@@ -1407,19 +1465,16 @@
     }
   }
 
-  // ---------- Event wiring ----------
   el.modeToggleButton.addEventListener("click", cycleMode);
 
   el.startStopButton.addEventListener("click", function () {
     if (!runActive && !countdownActive) {
-      // Start
       resetState();
       if (currentMode !== "practice") {
         prepareSequencesForRun();
       }
       startCountdownThenRun();
     } else {
-      // Stop (either during countdown or run)
       stopRun(true);
     }
   });
@@ -1439,15 +1494,12 @@
   });
 
   el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
-
   window.addEventListener("resize", handleOrientationWarning);
 
-  // Instructions modal close
   el.instructionsCloseBtn.addEventListener("click", function () {
     el.instructionsModal.style.display = "none";
   });
 
-  // ---------- Init ----------
   applyModeUI();
   resetState();
   renderLeaderboard("short");
@@ -1456,4 +1508,3 @@
 </script>
 </body>
 </html>
-
