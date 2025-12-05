@@ -33,13 +33,13 @@
       max-width: 900px;
       background: rgba(15, 23, 42, 0.96);
       border-radius: 16px;
-      padding: 16px 16px 24px;
+      padding: 12px 12px 20px;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
       box-sizing: border-box;
     }
 
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       font-size: 1.6rem;
       text-align: center;
     }
@@ -48,7 +48,7 @@
       text-align: center;
       font-size: 0.9rem;
       opacity: 0.8;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .top-controls {
@@ -56,7 +56,7 @@
       flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     button {
@@ -106,9 +106,9 @@
       gap: 6px;
       font-size: 0.78rem;
       background: #020617;
-      padding: 8px;
+      padding: 6px;
       border-radius: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .info-cell {
@@ -131,7 +131,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      margin: 10px 0 14px;
+      margin: 8px 0 10px;
       flex-wrap: nowrap;
     }
 
@@ -140,7 +140,7 @@
       border-radius: 14px;
       padding: 10px;
       text-align: center;
-      min-height: 70px;
+      min-height: 80px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -149,13 +149,13 @@
     }
 
     .word-box {
-      font-size: 1.1rem;
+      font-size: 1.3rem;
       font-weight: 700;
       letter-spacing: 0.06em;
     }
 
     .relation-box span {
-      font-size: 1rem;
+      font-size: 1.2rem;
       font-weight: 700;
     }
 
@@ -169,7 +169,7 @@
 
     .image-box img {
       max-width: 100%;
-      max-height: 80px;
+      max-height: 110px;
       object-fit: contain;
       display: block;
     }
@@ -178,7 +178,7 @@
       display: flex;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .answer-buttons button {
@@ -201,17 +201,17 @@
     }
 
     .leaderboard-panel {
-      margin-top: 10px;
+      margin-top: 8px;
       background: #020617;
       border-radius: 12px;
-      padding: 8px;
+      padding: 6px;
     }
 
     .leaderboard-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       font-size: 0.85rem;
     }
 
@@ -246,7 +246,7 @@
     }
 
     .name-input-row {
-      margin-top: 8px;
+      margin-top: 6px;
       display: flex;
       gap: 6px;
       align-items: center;
@@ -327,7 +327,7 @@
 
     @media (max-width: 600px) {
       .game-container {
-        padding: 12px;
+        padding: 10px;
       }
       .info-panel {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -337,7 +337,7 @@
         align-items: stretch;
       }
       .word-box, .relation-box, .image-box {
-        min-height: 60px;
+        min-height: 70px;
       }
       .answer-buttons button {
         padding: 10px 4px;
@@ -393,14 +393,15 @@
         </div>
       </div>
 
+      <!-- 🔁 ORDER CHANGED: picture (left), relation (middle), word (right) -->
       <div class="flash-row">
-        <div class="word-box" id="wordBox">WORD</div>
-        <div class="relation-box" id="relationBox">
-          <span class="relation-is">IS</span>
-        </div>
         <div class="image-box">
           <img id="pictureBox" src="" alt="object" />
         </div>
+        <div class="relation-box" id="relationBox">
+          <span class="relation-is">IS</span>
+        </div>
+        <div class="word-box" id="wordBox">WORD</div>
       </div>
 
       <div class="answer-buttons">
@@ -444,7 +445,7 @@
     <div id="instructionsContent">
       <h2>How to Play</h2>
       <ul>
-        <li>A word appears on the left and a picture on the right.</li>
+        <li>A picture appears on the left and a word on the right.</li>
         <li>The middle box shows <strong>IS</strong> or <strong style="color:#fecaca;">IS NOT</strong>.</li>
         <li>
           When it says <strong>IS</strong>:
@@ -894,12 +895,10 @@
         infiniteTimeLimitMs = INFINITE_START_LIMIT_MS;
       }
 
-      // For short/long, start with a shuffled picture order
       if (currentMode === 'short' || currentMode === 'long') {
         remainingPicturesForRun = shuffleArray(ITEM_KEYS);
       }
 
-      // initial question
       questionNumber = 0;
       generateQuestion();
       questionNumber = 1;
@@ -1114,10 +1113,8 @@
 
     startStopButton.addEventListener('click', () => {
       if (!runActive) {
-        // Start
         startCountdownAndRun();
       } else {
-        // Stop early – abort
         endRun('aborted');
       }
     });
@@ -1161,7 +1158,6 @@
     // Init
     // -----------------------------
 
-    // Show a random placeholder picture at load
     (function initPlaceholder() {
       const item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
       pictureBox.src = item.url;
