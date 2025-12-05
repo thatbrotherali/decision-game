@@ -2,1511 +2,1177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>People of the World – Decision Game</title>
+  <title>Decision Game – People Of The World</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --pow-bg: #f4f5fb;
-      --pow-accent: #1c8fa9;
-      --pow-accent-soft: #e0f3f7;
-      --pow-text: #222;
-      --pow-muted: #666;
-      --pow-card-bg: #ffffff;
-      --pow-danger: #c0392b;
-      --pow-success: #27ae60;
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --accent: #38bdf8;
+      --accent-soft: #0ea5e9;
+      --danger: #f97373;
+      --success: #4ade80;
+      --text: #e5e7eb;
     }
-
-    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: var(--pow-bg);
-      color: var(--pow-text);
-    }
-
-    #pow-decision-game {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 12px;
-    }
-
-    .pow-header {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%);
+      color: var(--text);
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 16px;
+      padding: 16px 16px 24px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-bottom: 16px;
+    }
+
+    .top-controls {
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pow-header-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-    }
-
-    .pow-mode-buttons {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 12px;
     }
 
     button {
-      border-radius: 999px;
       border: none;
-      padding: 6px 14px;
+      border-radius: 999px;
+      padding: 8px 16px;
       font-size: 0.9rem;
       cursor: pointer;
-      background: #e4e6f0;
-      color: var(--pow-text);
-      font-weight: 500;
-      transition: background 0.15s, transform 0.05s;
+      background: var(--panel);
+      color: var(--text);
+      transition: background 0.15s, transform 0.08s, box-shadow 0.08s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
       white-space: nowrap;
     }
 
-    button:hover { background: #d5d7e5; }
-    button:active { transform: scale(0.97); }
-
-    button.pow-primary {
-      background: var(--pow-accent);
-      color: #fff;
-    }
-    button.pow-primary:hover { background: #147187; }
-
-    button.pow-ghost {
-      background: transparent;
-      border: 1px solid #cfd3e5;
+    button:hover {
+      background: #0b5f82;
     }
 
-    button.pow-danger {
-      background: var(--pow-danger);
-      color: #fff;
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
     }
-    button.pow-danger:hover { background: #962d22; }
 
-    .pow-status-bar {
-      display: flex;
-      flex-wrap: wrap;
+    #startStopButton {
+      background: var(--accent);
+      color: #020617;
+      font-weight: 600;
+    }
+
+    #startStopButton.running {
+      background: #ef4444;
+      color: #f9fafb;
+    }
+
+    #modeButton {
+      background: #111827;
+    }
+
+    #leaderboardModeButton {
+      background: #0f766e;
+    }
+
+    .info-panel {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
-      padding: 6px;
-      border-radius: 16px;
-      background: var(--pow-accent-soft);
-      margin-bottom: 8px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      background: #020617;
+      padding: 8px;
+      border-radius: 10px;
+      margin-bottom: 10px;
     }
 
-    .pow-status-item {
-      min-width: 110px;
+    .info-cell {
+      opacity: 0.9;
     }
 
-    .pow-label {
+    .info-label {
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--pow-muted);
-      margin-bottom: 2px;
-      /* hide labels from player */
-      display: none;
+      opacity: 0.7;
     }
 
-    .pow-value { font-weight: 600; }
-
-    .pow-play-area {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 8px;
-      align-items: stretch;
+    .info-value {
+      font-weight: 600;
     }
 
-    .pow-card {
-      flex: 1;
-      background: var(--pow-card-bg);
-      border-radius: 20px;
-      padding: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    .flash-row {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      min-width: 0;
+      gap: 6px;
+      margin: 10px 0 14px;
+      flex-wrap: nowrap;
     }
 
-    .pow-word {
-      font-size: 2.1rem;
-      font-weight: 700;
+    .word-box, .relation-box, .image-box {
+      background: #020617;
+      border-radius: 14px;
+      padding: 10px;
       text-align: center;
-      word-wrap: break-word;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pow-image-wrapper {
-      position: relative;
-      width: 100%;
-      padding-top: 70%;
-      overflow: hidden;
-      border-radius: 16px;
-      background: #f8f8fc;
+      min-height: 70px;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      flex: 1 1 0;
     }
 
-    .pow-image-wrapper img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+    .word-box {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .relation-box span {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .relation-is {
+      color: var(--success);
+    }
+
+    .relation-not {
+      color: #fecaca;
+    }
+
+    .image-box img {
+      max-width: 100%;
+      max-height: 80px;
       object-fit: contain;
+      display: block;
     }
 
-    .pow-relation-card {
-      flex: 0 0 140px; /* wider so "is not" fits comfortably */
-      align-items: center;
-      justify-content: center;
+    .answer-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .answer-buttons button {
+      flex: 1;
+      padding: 12px 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    #falseButton {
+      background: #111827;
+      border: 2px solid #ef4444;
+      color: #fecaca;
+    }
+
+    #trueButton {
+      background: #111827;
+      border: 2px solid #22c55e;
+      color: #bbf7d0;
+    }
+
+    .leaderboard-panel {
+      margin-top: 10px;
+      background: #020617;
+      border-radius: 12px;
       padding: 8px;
     }
 
-    .pow-relation-label {
-      width: 100%;
-      text-align: center;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #333;
-      word-wrap: break-word;
-      white-space: normal;   /* allow "is not" to wrap to two lines if needed */
-      line-height: 1.1;
-    }
-
-    .pow-relation-not {
-      color: var(--pow-danger);
-    }
-
-    .pow-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .pow-actions button {
-      flex: 1;
-      padding: 12px 18px;
-      font-size: 1.1rem;
-    }
-
-    .pow-actions .false {
-      background: #f7d7d7;
-      color: #b03030;
-    }
-    .pow-actions .false:hover { background: #f1c0c0; }
-
-    .pow-actions .true {
-      background: #d5f3dd;
-      color: #227a3b;
-    }
-    .pow-actions .true:hover { background: #beeac9; }
-
-    .pow-helper-text {
-      font-size: 0.75rem;
-      color: var(--pow-muted);
-      margin-bottom: 8px;
-    }
-
-    .pow-summary {
-      background: var(--pow-card-bg);
-      border-radius: 16px;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-      font-size: 0.9rem;
-    }
-
-    .pow-summary-title {
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .pow-summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 3px;
-    }
-
-    .pow-summary-highlight {
-      color: var(--pow-success);
-      font-weight: 600;
-    }
-
-    .pow-leaderboard-section {
-      background: var(--pow-card-bg);
-      border-radius: 16px;
-      padding: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-      font-size: 0.85rem;
-    }
-
-    .pow-leaderboard-header {
+    .leaderboard-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pow-leaderboard-title { font-weight: 600; }
-
-    .pow-leaderboard-table-wrapper {
-      max-height: 280px;
-      overflow: auto;
-      border-radius: 12px;
-      border: 1px solid #e0e2f0;
+      font-size: 0.85rem;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-
-    thead {
-      position: sticky;
-      top: 0;
-      background: #f5f6ff;
-      z-index: 1;
+      font-size: 0.75rem;
     }
 
     th, td {
       padding: 4px 6px;
       text-align: left;
-      border-bottom: 1px solid #f0f1f7;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      white-space: nowrap;
     }
 
     th {
       font-weight: 600;
-      color: var(--pow-muted);
-      font-size: 0.75rem;
+      opacity: 0.85;
     }
 
-    tbody tr:nth-child(odd) { background: #fafbff; }
+    tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.6);
+    }
 
-    .pow-tag {
-      display: inline-block;
-      padding: 1px 6px;
+    .rank-cell {
+      width: 30px;
+    }
+
+    .initials-cell {
+      width: 60px;
+    }
+
+    .name-input-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .name-input-row input {
       border-radius: 999px;
+      border: 1px solid #4b5563;
+      padding: 5px 10px;
+      background: #020617;
+      color: var(--text);
+      outline: none;
+      width: 90px;
+    }
+
+    .tiny-note {
       font-size: 0.7rem;
-      background: #e0f3f7;
-      color: #256773;
+      opacity: 0.7;
     }
 
-    .pow-message {
-      margin-top: 4px;
-      font-size: 0.8rem;
-      color: var(--pow-muted);
-    }
-
-    .pow-message.highlight {
-      color: var(--pow-success);
-    }
-
-    .pow-warning {
-      font-size: 0.8rem;
-      color: var(--pow-danger);
-      margin-bottom: 6px;
-      display: none;
-    }
-
-    /* Modal for instructions */
-    .pow-modal-backdrop {
+    /* Instructions modal */
+    #instructionsModal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(15, 23, 42, 0.88);
       display: flex;
-      align-items: center;
       justify-content: center;
-      z-index: 9999;
+      align-items: center;
+      z-index: 50;
     }
 
-    .pow-modal {
-      max-width: 520px;
-      width: 92%;
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 8px 26px rgba(0,0,0,0.18);
-      padding: 16px 18px 14px;
-    }
-
-    .pow-modal-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .pow-modal-sub {
-      font-size: 0.85rem;
-      color: var(--pow-muted);
-      margin-bottom: 10px;
-    }
-
-    .pow-modal-section-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-top: 8px;
-      margin-bottom: 4px;
-    }
-
-    .pow-modal-text {
-      font-size: 0.8rem;
-      color: var(--pow-text);
-      line-height: 1.4;
-      margin-bottom: 4px;
-    }
-
-    .pow-modal-footer {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .pow-modal-footer button {
-      padding: 6px 16px;
+    #instructionsContent {
+      background: #020617;
+      border-radius: 16px;
+      padding: 18px 16px;
+      max-width: 500px;
+      margin: 0 12px;
       font-size: 0.9rem;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.9);
     }
 
-    /* ---------- Mobile tweaks ---------- */
-    @media (max-width: 768px) {
-      .pow-header-title {
-        font-size: 1.1rem;
-      }
-
-      .pow-play-area {
-        gap: 6px;
-        margin-bottom: 6px;
-      }
-
-      .pow-card {
-        padding: 8px;
-      }
-
-      .pow-word {
-        font-size: 1.4rem;
-      }
-
-      .pow-image-wrapper {
-        padding-top: 55%; /* shallower so buttons stay in view */
-      }
-
-      .pow-relation-card {
-        flex: 0 0 110px;
-      }
-
-      .pow-relation-label {
-        font-size: 1.4rem;
-      }
-
-      .pow-actions {
-        margin-bottom: 6px;
-      }
-
-      .pow-actions button {
-        padding: 10px 8px;
-        font-size: 0.95rem;
-      }
-
-      .pow-status-bar {
-        gap: 4px;
-        padding: 4px;
-        font-size: 0.75rem;
-      }
-
-      .pow-status-item {
-        min-width: 90px;
-      }
-
-      .pow-helper-text {
-        font-size: 0.7rem;
-      }
+    #instructionsContent h2 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 1.1rem;
     }
 
-    @media (max-width: 520px) {
-      .pow-play-area {
-        gap: 4px;
-        margin-bottom: 4px;
-      }
+    #instructionsContent ul {
+      margin: 4px 0 8px 20px;
+      padding: 0;
+    }
 
-      .pow-card {
-        padding: 6px;
-        border-radius: 16px;
-      }
+    #instructionsContent li {
+      margin-bottom: 4px;
+    }
 
-      .pow-word {
-        font-size: 1.1rem;
-      }
+    #countdownOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+    }
 
-      .pow-image-wrapper {
-        padding-top: 40%; /* even shallower on very small screens */
-      }
+    #countdownOverlay span {
+      font-size: 4rem;
+      font-weight: 800;
+      text-shadow: 0 0 20px rgba(56,189,248,0.8);
+    }
 
-      .pow-relation-card {
-        flex: 0 0 90px;
-      }
+    .game-shell {
+      position: relative;
+    }
 
-      .pow-relation-label {
-        font-size: 1.2rem;
+    @media (max-width: 600px) {
+      .game-container {
+        padding: 12px;
       }
-
-      .pow-status-bar {
-        font-size: 0.7rem;
-        margin-bottom: 6px;
+      .info-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-
-      .pow-status-item {
-        min-width: 80px;
+      .flash-row {
+        flex-direction: row;
+        align-items: stretch;
       }
-
-      .pow-actions {
-        margin-bottom: 6px;
+      .word-box, .relation-box, .image-box {
+        min-height: 60px;
       }
-
-      .pow-actions button {
-        font-size: 0.9rem;
-        padding: 8px 6px;
+      .answer-buttons button {
+        padding: 10px 4px;
+        font-size: 1rem;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      .subtitle {
+        font-size: 0.8rem;
       }
     }
   </style>
 </head>
 <body>
-<div id="pow-decision-game">
-  <div class="pow-header">
-    <div class="pow-header-title">Test and Improve Your Decision Making</div>
-    <div class="pow-mode-buttons">
-      <button id="modeToggleButton" class="pow-ghost">Mode: Short (10)</button>
-      <button id="startStopButton" class="pow-primary">Start</button>
-    </div>
-  </div>
+  <div class="game-container">
+    <h1>Decision Game</h1>
+    <div class="subtitle">Test and improve your decision making speed and accuracy</div>
 
-  <div id="orientationWarning" class="pow-warning">
-    For best experience on mobile, rotate your device to landscape.
-  </div>
+    <div class="game-shell">
+      <div id="countdownOverlay"><span id="countdownNumber"></span></div>
 
-  <!-- PLAY AREA: picture (left) – relation (middle) – word (right) -->
-  <div class="pow-play-area">
-    <!-- Picture LEFT -->
-    <div class="pow-card">
-      <div class="pow-image-wrapper">
-        <img id="pictureDisplay" alt="Decision picture" />
+      <div class="top-controls">
+        <button id="modeButton">Mode: Practice</button>
+        <button id="startStopButton">Start</button>
+        <button id="leaderboardModeButton">Leaderboard: Short</button>
       </div>
-    </div>
 
-    <!-- Relation MIDDLE -->
-    <div class="pow-card pow-relation-card">
-      <div class="pow-relation-label" id="relationLabel">is</div>
-    </div>
-
-    <!-- Word RIGHT -->
-    <div class="pow-card">
-      <div class="pow-word" id="wordDisplay">Press Start</div>
-    </div>
-  </div>
-
-  <div class="pow-actions">
-    <button id="falseButton" class="false">False</button>
-    <button id="trueButton" class="true">True</button>
-  </div>
-
-  <div class="pow-status-bar">
-    <div class="pow-status-item">
-      <div class="pow-label">Mode</div>
-      <div class="pow-value" id="statusMode">Short (10)</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Question</div>
-      <div class="pow-value" id="statusQuestion">0 / 10</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Session Time</div>
-      <div class="pow-value" id="statusTotalTime">0.00s</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Avg Reaction</div>
-      <div class="pow-value" id="statusAvgTime">0.00s</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Correct</div>
-      <div class="pow-value" id="statusCorrect">0</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Incorrect</div>
-      <div class="pow-value" id="statusIncorrect">0</div>
-    </div>
-  </div>
-
-  <div class="pow-helper-text" id="helperText">
-    Tap <strong>Mode</strong> to switch between Practice / Short / Long, then press
-    <strong>Start</strong>.<br />
-    You now see a <strong>picture on the left</strong>, a middle box that says
-    <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br />
-    Answer <strong>True</strong> if that full sentence is correct.<br />
-    On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
-  </div>
-
-  <div class="pow-summary" id="summaryPanel" style="display: none;">
-    <div class="pow-summary-title">Run Summary</div>
-    <div class="pow-summary-row">
-      <span>Mode</span>
-      <span id="summaryMode"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Questions</span>
-      <span id="summaryQuestions"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Correct</span>
-      <span id="summaryCorrect"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Incorrect</span>
-      <span id="summaryIncorrect"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Total time</span>
-      <span id="summaryTotalTime"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Average reaction</span>
-      <span id="summaryAvgTime"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Your best (this mode)</span>
-      <span id="summaryBest"></span>
-    </div>
-    <div class="pow-message" id="summaryMessage"></div>
-  </div>
-
-  <div class="pow-leaderboard-section pow-leaderboard">
-    <div class="pow-leaderboard-header">
-      <div>
-        <div class="pow-leaderboard-title">
-          Leaderboard <span id="leaderboardModeLabel" class="pow-tag">Short</span>
+      <div class="info-panel">
+        <div class="info-cell">
+          <div class="info-label">Mode</div>
+          <div class="info-value" id="infoMode">Practice</div>
         </div>
-        <div class="pow-message">
-          Ranked by fewest mistakes, then total time, then average reaction.
+        <div class="info-cell">
+          <div class="info-label">Question</div>
+          <div class="info-value" id="infoQuestion">0</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Correct / Incorrect</div>
+          <div class="info-value" id="infoScore">0 / 0</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Run Time</div>
+          <div class="info-value" id="infoRunTime">0.00s</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Avg Time</div>
+          <div class="info-value" id="infoAvgTime">0.00s</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Infinite Limit</div>
+          <div class="info-value" id="infoInfiniteLimit">–</div>
         </div>
       </div>
-      <div>
-        <button id="leaderboardToggleButton" class="pow-primary">
-          View: Short
-        </button>
+
+      <div class="flash-row">
+        <div class="word-box" id="wordBox">WORD</div>
+        <div class="relation-box" id="relationBox">
+          <span class="relation-is">IS</span>
+        </div>
+        <div class="image-box">
+          <img id="pictureBox" src="" alt="object" />
+        </div>
+      </div>
+
+      <div class="answer-buttons">
+        <button id="falseButton">FALSE</button>
+        <button id="trueButton">TRUE</button>
       </div>
     </div>
-    <div class="pow-leaderboard-table-wrapper">
+
+    <div class="leaderboard-panel">
+      <div class="leaderboard-header">
+        <span id="leaderboardTitle">Leaderboard – Short</span>
+        <button id="refreshLeaderboardButton">Refresh</button>
+      </div>
       <table>
         <thead>
-        <tr>
-          <th>#</th>
-          <th>Initials</th>
-          <th>Q</th>
-          <th>C</th>
-          <th>IC</th>
-          <th>Total (s)</th>
-          <th>Avg (s)</th>
-        </tr>
+          <tr>
+            <th class="rank-cell">#</th>
+            <th class="initials-cell">Init</th>
+            <th>Correct</th>
+            <th>Questions</th>
+            <th>Total</th>
+            <th>Avg</th>
+          </tr>
         </thead>
-        <tbody id="leaderboardBody"></tbody>
+        <tbody id="leaderboardBody">
+        </tbody>
       </table>
+
+      <div class="name-input-row">
+        <div>
+          Initials:
+          <input id="initialsInput" maxlength="3" placeholder="ABC" />
+        </div>
+        <span class="tiny-note">Only full short/long runs and infinite runs that end by mistake or timeout are saved.</span>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Instructions modal -->
-<div id="instructionsModal" class="pow-modal-backdrop" style="display:flex;">
-  <div class="pow-modal">
-    <div class="pow-modal-title">Welcome to the POW Decision Game</div>
-    <div class="pow-modal-sub">
-      Train your moment-to-moment decision making with fast, honest feedback.
-    </div>
-
-    <div class="pow-modal-section-title">How it works</div>
-    <div class="pow-modal-text">
-      You see a <strong>picture on the left</strong>, a middle box that says
-      <strong>“is”</strong> or <strong style="color:#c0392b;">“is not”</strong>,
-      and a <strong>word on the right</strong>.
-    </div>
-    <div class="pow-modal-text">
-      Your job is to decide if the full sentence is <strong>true or false</strong>.
-    </div>
-
-    <div class="pow-modal-section-title">Controls</div>
-    <div class="pow-modal-text">
-      • Tap / click the <strong>True</strong> or <strong>False</strong> buttons.<br/>
-      • On desktop you can also use:
-      <strong>Left Arrow → False</strong>, <strong>Right Arrow → True</strong>.
-    </div>
-
-    <div class="pow-modal-section-title">Modes</div>
-    <div class="pow-modal-text">
-      • <strong>Practice</strong>: Infinite questions, just train. Time and average reaction are shown, but not ranked.<br/>
-      • <strong>Short</strong>: 10 questions, used for the leaderboard.<br/>
-      • <strong>Long</strong>: 20 questions, also ranked separately.
-    </div>
-
-    <div class="pow-modal-section-title">Scoring & sounds</div>
-    <div class="pow-modal-text">
-      • You get a <strong>green ding</strong> for a correct answer.<br/>
-      • A <strong>low buzzer</strong> means the answer was wrong.<br/>
-      • A <strong>start bell</strong> plays after the 3-2-1 countdown.<br/>
-      • A <strong>finish bell</strong> plays at the end of each run.
-    </div>
-    <div class="pow-modal-text">
-      The leaderboard keeps only your <strong>best score per mode</strong>, based on:
-      fewest mistakes, then total time, then average reaction time.
-    </div>
-
-    <div class="pow-modal-footer">
-      <button id="instructionsCloseBtn" class="pow-primary">Got it</button>
+  <!-- Instructions Modal -->
+  <div id="instructionsModal">
+    <div id="instructionsContent">
+      <h2>How to Play</h2>
+      <ul>
+        <li>A word appears on the left and a picture on the right.</li>
+        <li>The middle box shows <strong>IS</strong> or <strong style="color:#fecaca;">IS NOT</strong>.</li>
+        <li>
+          When it says <strong>IS</strong>:
+          press <strong>TRUE</strong> if the word and picture match, otherwise press <strong>FALSE</strong>.
+        </li>
+        <li>
+          When it says <strong>IS NOT</strong>:
+          the logic is reversed – press <strong>TRUE</strong> if they do <em>not</em> match.
+        </li>
+        <li><strong>Practice:</strong> play freely, no leaderboard.</li>
+        <li><strong>Short:</strong> 10 questions. <strong>Long:</strong> 20 questions.</li>
+        <li>
+          <strong>Infinite:</strong> you get <em>one mistake only</em>. Each answer is timed.
+          Time starts at 1.0s and gets shorter by 0.1s every 50 correct answers, down to 0.3s.
+        </li>
+        <li>On computer you can also use the arrow keys: <strong>Left = FALSE</strong>, <strong>Right = TRUE</strong>.</li>
+      </ul>
+      <button id="closeInstructionsButton">Got it</button>
     </div>
   </div>
-</div>
 
-<script>
-(function () {
-  const ITEMS = [
-    { key: "ball", label: "Ball", url: "https://static.wixstatic.com/media/eaef6d_7f2b9555f08e4407bcf27857bf332d3c~mv2.png" },
-    { key: "umbrella", label: "Umbrella", url: "https://static.wixstatic.com/media/eaef6d_a783bbb23e2f4960a84c5946322bd1d1~mv2.png" },
-    { key: "pig", label: "Pig", url: "https://static.wixstatic.com/media/eaef6d_12d8e64c3bbb45749e7d2328b1ea3329~mv2.png" },
-    { key: "butterfly", label: "Butterfly", url: "https://static.wixstatic.com/media/eaef6d_87217c52f3b44756834c0cc47ddb62fc~mv2.png" },
-    { key: "airplane", label: "Airplane", url: "https://static.wixstatic.com/media/eaef6d_fd2e5d6a21154331aad70d6079dce246~mv2.png" },
-    { key: "car", label: "Car", url: "https://static.wixstatic.com/media/eaef6d_ce7258f9c42342c49453582be5a69c88~mv2.png" },
-    { key: "mouse", label: "Mouse", url: "https://static.wixstatic.com/media/eaef6d_cb46105a23d049808c595598fe7d883f~mv2.png" },
-    { key: "hat", label: "Hat", url: "https://static.wixstatic.com/media/eaef6d_bb22e0b78d134c88bb6c67d4941ece27~mv2.png" },
-    { key: "house", label: "House", url: "https://static.wixstatic.com/media/eaef6d_6ece4136d1ec4dc8bf3f51c8e244766b~mv2.png" },
-    { key: "cow", label: "Cow", url: "https://static.wixstatic.com/media/eaef6d_df0c98fc5b28458db695aa5cb3d414a8~mv2.png" },
-    { key: "bus", label: "Bus", url: "https://static.wixstatic.com/media/eaef6d_64f8949a66c14145948d1cb0db7e7224~mv2.png" },
-    { key: "tree", label: "Tree", url: "https://static.wixstatic.com/media/eaef6d_0fd2bc64878e41a299cc22c3f0a35abf~mv2.png" },
-    { key: "flower", label: "Flower", url: "https://static.wixstatic.com/media/eaef6d_8cf53ea56de040f2b2ceecfe2a2619b4~mv2.png" },
-    { key: "bee", label: "Bee", url: "https://static.wixstatic.com/media/eaef6d_8f18d62b58914a7085530ea3d3183901~mv2.png" },
-    { key: "cup", label: "Cup", url: "https://static.wixstatic.com/media/eaef6d_633ee54b4fd9427bb9ef5a3d2e027fe3~mv2.png" },
-    { key: "ballerina", label: "Ballerina", url: "https://static.wixstatic.com/media/eaef6d_2a8b7bce57d24700b5bd133da2da1dd1~mv2.png" },
-    { key: "bird", label: "Bird", url: "https://static.wixstatic.com/media/eaef6d_653bf4fd82f94aff94796803666e80de~mv2.png" },
-    { key: "chair", label: "Chair", url: "https://static.wixstatic.com/media/eaef6d_3b4a0f88dd6d4ba485ed22d103eabf2a~mv2.png" },
-    { key: "book", label: "Book", url: "https://static.wixstatic.com/media/eaef6d_f0408751e9a640d88066b46722a8ea91~mv2.png" },
-    { key: "cherry", label: "Cherry", url: "https://static.wixstatic.com/media/eaef6d_97c92754a41d489eb0bb984377487207~mv2.png" }
-  ];
+  <script>
+    // -----------------------------
+    // Data: images & words
+    // -----------------------------
 
-  const STORAGE_KEY = "powDecisionGameStats_v1";
+    const ITEMS = [
+      { key: 'ball',      label: 'BALL',      url: 'https://static.wixstatic.com/media/eaef6d_7f2b9555f08e4407bcf27857bf332d3c~mv2.png' },
+      { key: 'umbrella',  label: 'UMBRELLA',  url: 'https://static.wixstatic.com/media/eaef6d_a783bbb23e2f4960a84c5946322bd1d1~mv2.png' },
+      { key: 'pig',       label: 'PIG',       url: 'https://static.wixstatic.com/media/eaef6d_12d8e64c3bbb45749e7d2328b1ea3329~mv2.png' },
+      { key: 'butterfly', label: 'BUTTERFLY', url: 'https://static.wixstatic.com/media/eaef6d_87217c52f3b44756834c0cc47ddb62fc~mv2.png' },
+      { key: 'airplane',  label: 'AIRPLANE',  url: 'https://static.wixstatic.com/media/eaef6d_fd2e5d6a21154331aad70d6079dce246~mv2.png' },
+      { key: 'car',       label: 'CAR',       url: 'https://static.wixstatic.com/media/eaef6d_ce7258f9c42342c49453582be5a69c88~mv2.png' },
+      { key: 'mouse',     label: 'MOUSE',     url: 'https://static.wixstatic.com/media/eaef6d_cb46105a23d049808c595598fe7d883f~mv2.png' },
+      { key: 'hat',       label: 'HAT',       url: 'https://static.wixstatic.com/media/eaef6d_bb22e0b78d134c88bb6c67d4941ece27~mv2.png' },
+      { key: 'house',     label: 'HOUSE',     url: 'https://static.wixstatic.com/media/eaef6d_6ece4136d1ec4dc8bf3f51c8e244766b~mv2.png' },
+      { key: 'cow',       label: 'COW',       url: 'https://static.wixstatic.com/media/eaef6d_df0c98fc5b28458db695aa5cb3d414a8~mv2.png' },
+      { key: 'bus',       label: 'BUS',       url: 'https://static.wixstatic.com/media/eaef6d_64f8949a66c14145948d1cb0db7e7224~mv2.png' },
+      { key: 'tree',      label: 'TREE',      url: 'https://static.wixstatic.com/media/eaef6d_0fd2bc64878e41a299cc22c3f0a35abf~mv2.png' },
+      { key: 'flower',    label: 'FLOWER',    url: 'https://static.wixstatic.com/media/eaef6d_8cf53ea56de040f2b2ceecfe2a2619b4~mv2.png' },
+      { key: 'bee',       label: 'BEE',       url: 'https://static.wixstatic.com/media/eaef6d_8f18d62b58914a7085530ea3d3183901~mv2.png' },
+      { key: 'cup',       label: 'CUP',       url: 'https://static.wixstatic.com/media/eaef6d_633ee54b4fd9427bb9ef5a3d2e027fe3~mv2.png' },
+      { key: 'ballerina', label: 'BALLERINA', url: 'https://static.wixstatic.com/media/eaef6d_2a8b7bce57d24700b5bd133da2da1dd1~mv2.png' },
+      { key: 'bird',      label: 'BIRD',      url: 'https://static.wixstatic.com/media/eaef6d_653bf4fd82f94aff94796803666e80de~mv2.png' },
+      { key: 'chair',     label: 'CHAIR',     url: 'https://static.wixstatic.com/media/eaef6d_3b4a0f88dd6d4ba485ed22d103eabf2a~mv2.png' },
+      { key: 'book',      label: 'BOOK',      url: 'https://static.wixstatic.com/media/eaef6d_f0408751e9a640d88066b46722a8ea91~mv2.png' },
+      { key: 'cherries',  label: 'CHERRY',    url: 'https://static.wixstatic.com/media/eaef6d_97c92754a41d489eb0bb984377487207~mv2.png' }
+    ];
 
-  const el = {
-    modeToggleButton: document.getElementById("modeToggleButton"),
-    startStopButton: document.getElementById("startStopButton"),
-    statusMode: document.getElementById("statusMode"),
-    statusQuestion: document.getElementById("statusQuestion"),
-    statusTotalTime: document.getElementById("statusTotalTime"),
-    statusAvgTime: document.getElementById("statusAvgTime"),
-    statusCorrect: document.getElementById("statusCorrect"),
-    statusIncorrect: document.getElementById("statusIncorrect"),
-    wordDisplay: document.getElementById("wordDisplay"),
-    pictureDisplay: document.getElementById("pictureDisplay"),
-    relationLabel: document.getElementById("relationLabel"),
-    falseButton: document.getElementById("falseButton"),
-    trueButton: document.getElementById("trueButton"),
-    summaryPanel: document.getElementById("summaryPanel"),
-    summaryMode: document.getElementById("summaryMode"),
-    summaryQuestions: document.getElementById("summaryQuestions"),
-    summaryCorrect: document.getElementById("summaryCorrect"),
-    summaryIncorrect: document.getElementById("summaryIncorrect"),
-    summaryTotalTime: document.getElementById("summaryTotalTime"),
-    summaryAvgTime: document.getElementById("summaryAvgTime"),
-    summaryBest: document.getElementById("summaryBest"),
-    summaryMessage: document.getElementById("summaryMessage"),
-    leaderboardBody: document.getElementById("leaderboardBody"),
-    leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
-    leaderboardToggleButton: document.getElementById("leaderboardToggleButton"),
-    orientationWarning: document.getElementById("orientationWarning"),
-    instructionsModal: document.getElementById("instructionsModal"),
-    instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
-  };
+    const ITEM_KEYS = ITEMS.map(i => i.key);
 
-  /* ---- Audio ---- */
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  let audioCtx = null;
+    // -----------------------------
+    // DOM elements
+    // -----------------------------
 
-  function getAudioCtx() {
-    if (!AudioCtx) return null;
-    if (!audioCtx) {
-      try { audioCtx = new AudioCtx(); } catch (e) { audioCtx = null; }
+    const modeButton = document.getElementById('modeButton');
+    const startStopButton = document.getElementById('startStopButton');
+    const leaderboardModeButton = document.getElementById('leaderboardModeButton');
+    const refreshLeaderboardButton = document.getElementById('refreshLeaderboardButton');
+
+    const infoModeEl = document.getElementById('infoMode');
+    const infoQuestionEl = document.getElementById('infoQuestion');
+    const infoScoreEl = document.getElementById('infoScore');
+    const infoRunTimeEl = document.getElementById('infoRunTime');
+    const infoAvgTimeEl = document.getElementById('infoAvgTime');
+    const infoInfiniteLimitEl = document.getElementById('infoInfiniteLimit');
+
+    const wordBox = document.getElementById('wordBox');
+    const relationBox = document.getElementById('relationBox');
+    const pictureBox = document.getElementById('pictureBox');
+
+    const trueButton = document.getElementById('trueButton');
+    const falseButton = document.getElementById('falseButton');
+
+    const leaderboardTitle = document.getElementById('leaderboardTitle');
+    const leaderboardBody = document.getElementById('leaderboardBody');
+    const initialsInput = document.getElementById('initialsInput');
+
+    const instructionsModal = document.getElementById('instructionsModal');
+    const closeInstructionsButton = document.getElementById('closeInstructionsButton');
+
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownNumber = document.getElementById('countdownNumber');
+
+    // -----------------------------
+    // Audio (no external files)
+    // -----------------------------
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function ensureAudioCtx() {
+      if (!AudioCtx) return null;
+      if (!audioCtx) {
+        audioCtx = new AudioCtx();
+      }
+      return audioCtx;
     }
-    return audioCtx;
-  }
 
-  function playTone(freq, duration, volume) {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    try {
+    function beep(freq = 440, duration = 0.12, type = 'sine') {
+      const ctx = ensureAudioCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
+      osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.value = volume;
       osc.connect(gain);
       gain.connect(ctx.destination);
-      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
       osc.start(now);
       osc.stop(now + duration);
-    } catch (e) {}
-  }
+    }
 
-  function playCountdownBeep(stepIndex) {
-    const base = 600;
-    playTone(base + stepIndex * 80, 0.15, 0.25);
-  }
+    function playStartBell() {
+      beep(700, 0.18, 'triangle');
+    }
 
-  function playStartBell() {
-    playTone(1000, 0.22, 0.3);
-  }
+    function playCorrect() {
+      beep(1100, 0.09, 'square');
+    }
 
-  function playCorrectDing() {
-    playTone(880, 0.12, 0.28);
-  }
+    function playWrong() {
+      beep(220, 0.16, 'sawtooth');
+    }
 
-  function playFinishBell() {
-    playTone(900, 0.16, 0.25);
-    setTimeout(() => playTone(700, 0.18, 0.22), 180);
-  }
+    function playEndChime() {
+      beep(550, 0.12, 'triangle');
+      setTimeout(() => beep(880, 0.12, 'triangle'), 130);
+    }
 
-  function playWrongBuzz() {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    try {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.value = 260;
-      gain.gain.value = 0.22;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      const now = ctx.currentTime;
-      osc.start(now);
-      osc.stop(now + 0.18);
-    } catch (e) {}
-  }
+    // -----------------------------
+    // Game state
+    // -----------------------------
 
-  /* ---- Game state ---- */
-  let currentMode = "short"; // practice | short | long
-  let targetQuestions = 10;
-  let questionCount = 0;
-  let correctCount = 0;
-  let incorrectCount = 0;
-  let sessionStartTime = null;
-  let lastQuestionTime = null;
-  let totalReactionTime = 0;
-  let timerInterval = null;
-  let currentCorrectAnswer = null;
-  let currentQuestionActive = false;
-  let runActive = false;
+    const modes = ['practice', 'short', 'long', 'infinite'];
+    let currentModeIndex = 0;
+    let currentMode = modes[currentModeIndex];
 
-  let wordOrder = [];
-  let pictureOrder = [];
+    const leaderboardModes = ['short', 'long', 'infinite'];
+    let currentLeaderboardIndex = 0;
 
-  let lastWordIndex = null;
-  let lastPictureIndex = null;
+    let runActive = false;
+    let questionNumber = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
 
-  let lastIsNot = null;
-  let relationStreak = 0;
+    let runStartTime = null;
+    let lastQuestionTime = null;
+    let perQuestionDurations = [];
 
-  let countdownActive = false;
-  let countdownTimers = [];
+    let totalQuestionsTarget = null; // 10 or 20 for short/long, null otherwise
+    let runTimerInterval = null;
 
-  let leaderboardViewMode = "short";
-  let stats = loadStats();
+    let currentCorrectAnswerIsTrue = true;
+    let lastWordKey = null;
+    let lastPictureKey = null;
+    let lastRelation = null;
+    let relationStreak = 0;
 
-  function clearCountdownTimers() {
-    countdownTimers.forEach(id => clearTimeout(id));
-    countdownTimers = [];
-  }
+    // For short/long: use each picture once
+    let remainingPicturesForRun = [];
 
-  function loadStats() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        return {
-          playerInitials: "",
-          runs: {
-            short: { firstRun: null, bestRun: null, lastRun: null },
-            long: { firstRun: null, bestRun: null, lastRun: null }
-          },
-          leaderboard: { short: [], long: [] }
-        };
+    // Infinite mode state
+    let infiniteActive = false;
+    let infiniteQuestionsAnswered = 0;
+    let infiniteTimeLimitMs = 1000;
+    const INFINITE_START_LIMIT_MS = 1000;
+    const INFINITE_MIN_LIMIT_MS = 300;
+    let questionTimeoutId = null;
+
+    // Whether current run should be saved (completed / failed naturally)
+    let runEndReason = null; // 'completed', 'error', 'timeout', 'aborted'
+
+    const API_BASE = 'https://www.peopleoftheworld.net/_functions/decisionGame';
+
+    // -----------------------------
+    // Utility
+    // -----------------------------
+
+    function shuffleArray(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
-      const parsed = JSON.parse(raw);
-      if (!parsed.runs) {
-        parsed.runs = {
-          short: { firstRun: null, bestRun: null, lastRun: null },
-          long: { firstRun: null, bestRun: null, lastRun: null }
-        };
-      }
-      if (!parsed.leaderboard) {
-        parsed.leaderboard = { short: [], long: [] };
-      }
-      if (!parsed.runs.short)
-        parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
-      if (!parsed.runs.long)
-        parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
-      if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
-      if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
-
-      if (parsed.playerInitials === "???") parsed.playerInitials = "";
-
-      return parsed;
-    } catch (e) {
-      return {
-        playerInitials: "",
-        runs: {
-          short: { firstRun: null, bestRun: null, lastRun: null },
-          long: { firstRun: null, bestRun: null, lastRun: null }
-        },
-        leaderboard: { short: [], long: [] }
-      };
-    }
-  }
-
-  function saveStats() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
-    } catch (e) {}
-  }
-
-  function formatSeconds(sec) {
-    if (!isFinite(sec) || sec < 0) return "0.00s";
-    return sec.toFixed(2) + "s";
-  }
-
-  function shuffleArray(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = arr[i];
-      arr[i] = arr[j];
-      arr[j] = temp;
-    }
-    return arr;
-  }
-
-  function resetState() {
-    clearCountdownTimers();
-    countdownActive = false;
-
-    questionCount = 0;
-    correctCount = 0;
-    incorrectCount = 0;
-    totalReactionTime = 0;
-    sessionStartTime = null;
-    lastQuestionTime = null;
-    currentCorrectAnswer = null;
-    currentQuestionActive = false;
-    runActive = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-
-    wordOrder = [];
-    pictureOrder = [];
-    lastWordIndex = null;
-    lastPictureIndex = null;
-
-    lastIsNot = null;
-    relationStreak = 0;
-
-    el.statusTotalTime.textContent = "0.00s";
-    el.statusAvgTime.textContent = "0.00s";
-    el.statusCorrect.textContent = "0";
-    el.statusIncorrect.textContent = "0";
-    el.statusQuestion.textContent =
-      "0 / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
-
-    el.summaryPanel.style.display = "none";
-    el.summaryMessage.textContent = "";
-    el.wordDisplay.textContent = "Press Start";
-    el.relationLabel.textContent = "is";
-    el.relationLabel.classList.remove("pow-relation-not");
-
-    el.startStopButton.textContent = "Start";
-
-    if (ITEMS.length > 0) {
-      const idx = Math.floor(Math.random() * ITEMS.length);
-      const item = ITEMS[idx];
-      el.pictureDisplay.src = item.url;
-      el.pictureDisplay.alt = item.label;
-    } else {
-      el.pictureDisplay.src = "";
-      el.pictureDisplay.alt = "Decision picture";
-    }
-  }
-
-  function applyModeUI() {
-    let label;
-    if (currentMode === "practice") {
-      label = "Mode: Practice";
-      el.statusMode.textContent = "Practice";
-      el.statusQuestion.textContent = "0 / ∞";
-    } else if (currentMode === "short") {
-      label = "Mode: Short (10)";
-      el.statusMode.textContent = "Short (10)";
-      el.statusQuestion.textContent = "0 / 10";
-    } else {
-      label = "Mode: Long (20)";
-      el.statusMode.textContent = "Long (20)";
-      el.statusQuestion.textContent = "0 / 20";
-    }
-    el.modeToggleButton.textContent = label;
-  }
-
-  function setMode(mode) {
-    if (runActive || countdownActive) {
-      stopRun(true);
-    }
-    currentMode = mode;
-    if (mode === "practice") {
-      targetQuestions = Infinity;
-    } else if (mode === "short") {
-      targetQuestions = 10;
-    } else if (mode === "long") {
-      targetQuestions = 20;
-    }
-    resetState();
-    applyModeUI();
-  }
-
-  function cycleMode() {
-    if (currentMode === "practice") {
-      setMode("short");
-    } else if (currentMode === "short") {
-      setMode("long");
-    } else {
-      setMode("practice");
-    }
-  }
-
-  function prepareSequencesForRun() {
-    if (currentMode === "practice") {
-      wordOrder = [];
-      pictureOrder = [];
-      return;
-    }
-    const indices = [];
-    for (let i = 0; i < ITEMS.length; i++) indices.push(i);
-
-    const wordIndices = indices.slice();
-    shuffleArray(wordIndices);
-    wordOrder = wordIndices.slice(0, targetQuestions);
-
-    const pictureIndices = indices.slice();
-    shuffleArray(pictureIndices);
-    pictureOrder = pictureIndices.slice(0, targetQuestions);
-  }
-
-  function updateTimer() {
-    if (!sessionStartTime) return;
-    const now = performance.now();
-    const totalSec = (now - sessionStartTime) / 1000;
-    el.statusTotalTime.textContent = formatSeconds(totalSec);
-    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
-    el.statusAvgTime.textContent = formatSeconds(avgReaction);
-  }
-
-  function randomInt(max) {
-    return Math.floor(Math.random() * max);
-  }
-
-  function chooseIsNot() {
-    let isNot;
-    if (lastIsNot === null) {
-      isNot = Math.random() < 0.5;
-      lastIsNot = isNot;
-      relationStreak = 1;
-    } else {
-      const randomVal = Math.random() < 0.5;
-      if (randomVal === lastIsNot && relationStreak >= 2) {
-        isNot = !lastIsNot;
-      } else {
-        isNot = randomVal;
-      }
-      if (isNot === lastIsNot) {
-        relationStreak++;
-      } else {
-        lastIsNot = isNot;
-        relationStreak = 1;
-      }
-    }
-    return isNot;
-  }
-
-  function nextQuestion() {
-    if (!runActive) return;
-
-    if (currentMode !== "practice" && questionCount >= targetQuestions) {
-      stopRun(false);
-      return;
+      return a;
     }
 
-    let wordIndex;
-    let imageIndex;
-    let isNot;
-
-    if (currentMode === "practice") {
-      if (ITEMS.length === 0) return;
-
-      if (ITEMS.length === 1) {
-        wordIndex = 0;
-      } else {
-        do {
-          wordIndex = randomInt(ITEMS.length);
-        } while (wordIndex === lastWordIndex);
-      }
-
-      if (ITEMS.length === 1) {
-        imageIndex = 0;
-      } else {
-        do {
-          imageIndex = randomInt(ITEMS.length);
-        } while (imageIndex === lastPictureIndex);
-      }
-
-      isNot = chooseIsNot();
-    } else {
-      const idx = questionCount;
-      wordIndex = wordOrder[idx];
-      imageIndex = pictureOrder[idx];
-      isNot = chooseIsNot();
+    function pickRandomItem(excludeKey = null) {
+      const candidates = excludeKey ? ITEMS.filter(it => it.key !== excludeKey) : ITEMS;
+      return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
-    const wordItem = ITEMS[wordIndex];
-    const imageItem = ITEMS[imageIndex];
+    function updateInfoPanel() {
+      infoModeEl.textContent = currentMode[0].toUpperCase() + currentMode.slice(1);
+      infoQuestionEl.textContent = questionNumber;
+      infoScoreEl.textContent = `${correctCount} / ${incorrectCount}`;
 
-    el.wordDisplay.textContent = wordItem.label;
-    el.pictureDisplay.src = imageItem.url || "";
-    el.pictureDisplay.alt = imageItem.label;
+      if (runActive && runStartTime != null) {
+        const now = performance.now();
+        const totalMs = now - runStartTime;
+        infoRunTimeEl.textContent = (totalMs / 1000).toFixed(2) + 's';
 
-    if (isNot) {
-      el.relationLabel.textContent = "is not";
-      el.relationLabel.classList.add("pow-relation-not");
-    } else {
-      el.relationLabel.textContent = "is";
-      el.relationLabel.classList.remove("pow-relation-not");
-    }
-
-    const match = wordIndex === imageIndex;
-    currentCorrectAnswer = isNot ? !match : match;
-
-    lastWordIndex = wordIndex;
-    lastPictureIndex = imageIndex;
-
-    lastQuestionTime = performance.now();
-    currentQuestionActive = true;
-
-    const totalQ = isFinite(targetQuestions) ? targetQuestions : "∞";
-    el.statusQuestion.textContent = (questionCount + 1) + " / " + totalQ;
-  }
-
-  function handleAnswer(answerIsTrue) {
-    if (!runActive || !currentQuestionActive) return;
-
-    const now = performance.now();
-    const reactionSec = lastQuestionTime ? (now - lastQuestionTime) / 1000 : 0;
-    totalReactionTime += reactionSec;
-    questionCount++;
-
-    const isCorrect = answerIsTrue === currentCorrectAnswer;
-    if (isCorrect) {
-      correctCount++;
-      playCorrectDing();
-    } else {
-      incorrectCount++;
-      playWrongBuzz();
-    }
-
-    el.statusCorrect.textContent = String(correctCount);
-    el.statusIncorrect.textContent = String(incorrectCount);
-
-    if (currentMode !== "practice" && questionCount >= targetQuestions) {
-      currentQuestionActive = false;
-      stopRun(false);
-    } else {
-      nextQuestion();
-    }
-  }
-
-  function compareRuns(a, b) {
-    if (a.incorrect !== b.incorrect) return a.incorrect - b.incorrect;
-    if (a.totalTime !== b.totalTime) return a.totalTime - b.totalTime;
-    return a.avgReaction - b.avgReaction;
-  }
-
-  function isBetterRun(candidate, baseline) {
-    if (!baseline) return true;
-    return compareRuns(candidate, baseline) < 0;
-  }
-
-  function ensureInitials() {
-    const prev = (stats.playerInitials || "").trim().toUpperCase();
-    const hasValidPrev = prev && prev !== "???";
-    if (hasValidPrev) return prev;
-
-    let initials = "";
-    while (true) {
-      const input = prompt("Enter your initials (1–4 characters):", "") || "";
-      initials = input.trim().toUpperCase();
-
-      if (!initials) {
-        if (!confirm("No initials entered. Try again?")) break;
-      } else {
-        if (initials.length > 4) initials = initials.substring(0, 4);
-        break;
-      }
-    }
-
-    if (initials) {
-      stats.playerInitials = initials;
-      saveStats();
-      return initials;
-    }
-
-    if (hasValidPrev) return prev;
-    return "???";
-  }
-
-  function finalizeRun() {
-    if (!currentMode || currentMode === "practice") return;
-    if (currentMode !== "practice" && isFinite(targetQuestions) && questionCount < targetQuestions) {
-      return;
-    }
-
-    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
-    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
-
-    const run = {
-      mode: currentMode,
-      questions: questionCount,
-      correct: correctCount,
-      incorrect: incorrectCount,
-      totalTime: totalTimeSec,
-      avgReaction: avgReaction,
-      timestamp: Date.now()
-    };
-
-    const modeKey = currentMode;
-    const runBucket = stats.runs[modeKey];
-
-    if (!runBucket.firstRun) {
-      runBucket.firstRun = run;
-    }
-    runBucket.lastRun = run;
-
-    let isPersonalBest = false;
-    if (!runBucket.bestRun || isBetterRun(run, runBucket.bestRun)) {
-      runBucket.bestRun = run;
-      isPersonalBest = true;
-    }
-
-    const initials = ensureInitials();
-    const normalizedInitials = (initials || "???").toUpperCase();
-    let leaderboard = stats.leaderboard[modeKey] || [];
-    let leaderboardMessage = "";
-    let qualifies = false;
-
-    const entry = {
-      initials: normalizedInitials,
-      questions: run.questions,
-      correct: run.correct,
-      incorrect: run.incorrect,
-      totalTime: run.totalTime,
-      avgReaction: run.avgReaction,
-      timestamp: run.timestamp
-    };
-
-    const existingIndex = leaderboard.findIndex(
-      e => (e.initials || "???").toUpperCase() === normalizedInitials
-    );
-
-    if (existingIndex >= 0) {
-      const existing = leaderboard[existingIndex];
-      if (compareRuns(run, existing) < 0) {
-        leaderboard[existingIndex] = entry;
-        qualifies = true;
-        leaderboardMessage = "You improved your best score for this mode.";
-      } else {
-        qualifies = false;
-        leaderboardMessage =
-          "This run did not beat your best score for this mode.";
-      }
-    } else {
-      if (leaderboard.length < 100) {
-        leaderboard.push(entry);
-        qualifies = true;
-        leaderboardMessage = "This run made it into the top 100 for this mode.";
-      } else {
-        const worst = leaderboard[leaderboard.length - 1];
-        if (compareRuns(run, worst) < 0) {
-          leaderboard.push(entry);
-          qualifies = true;
-          leaderboardMessage =
-            "This run made it into the top 100 for this mode.";
+        const answered = perQuestionDurations.length;
+        if (answered > 0) {
+          const sum = perQuestionDurations.reduce((a, b) => a + b, 0);
+          infoAvgTimeEl.textContent = ((sum / answered) / 1000).toFixed(2) + 's';
         } else {
-          qualifies = false;
-          leaderboardMessage =
-            "This run did not reach the top 100, but it is still recorded as your current run.";
+          infoAvgTimeEl.textContent = '0.00s';
+        }
+      } else {
+        infoRunTimeEl.textContent = '0.00s';
+        infoAvgTimeEl.textContent = '0.00s';
+      }
+
+      if (currentMode === 'infinite') {
+        infoInfiniteLimitEl.textContent = (infiniteTimeLimitMs / 1000).toFixed(2) + 's';
+      } else {
+        infoInfiniteLimitEl.textContent = '–';
+      }
+    }
+
+    function startRunTimer() {
+      if (runTimerInterval) clearInterval(runTimerInterval);
+      runTimerInterval = setInterval(updateInfoPanel, 100);
+    }
+
+    function stopRunTimer() {
+      if (runTimerInterval) {
+        clearInterval(runTimerInterval);
+        runTimerInterval = null;
+      }
+      updateInfoPanel();
+    }
+
+    function scheduleInfiniteTimeout() {
+      if (!infiniteActive) return;
+      if (questionTimeoutId) {
+        clearTimeout(questionTimeoutId);
+        questionTimeoutId = null;
+      }
+      questionTimeoutId = setTimeout(() => {
+        handleInfiniteFailure('timeout');
+      }, infiniteTimeLimitMs);
+    }
+
+    function updateInfiniteTimeLimit() {
+      const blocksOf50 = Math.floor(infiniteQuestionsAnswered / 50);
+      const reduction = blocksOf50 * 100;
+      infiniteTimeLimitMs = Math.max(INFINITE_MIN_LIMIT_MS, INFINITE_START_LIMIT_MS - reduction);
+    }
+
+    function resetRunState() {
+      runActive = false;
+      questionNumber = 0;
+      correctCount = 0;
+      incorrectCount = 0;
+      runStartTime = null;
+      lastQuestionTime = null;
+      perQuestionDurations = [];
+      totalQuestionsTarget = null;
+      runEndReason = null;
+
+      if (runTimerInterval) {
+        clearInterval(runTimerInterval);
+        runTimerInterval = null;
+      }
+
+      if (questionTimeoutId) {
+        clearTimeout(questionTimeoutId);
+        questionTimeoutId = null;
+      }
+
+      infiniteActive = false;
+      infiniteQuestionsAnswered = 0;
+      infiniteTimeLimitMs = INFINITE_START_LIMIT_MS;
+
+      lastWordKey = null;
+      lastPictureKey = null;
+      lastRelation = null;
+      relationStreak = 0;
+
+      remainingPicturesForRun = [];
+      updateInfoPanel();
+    }
+
+    function setModeLabel() {
+      modeButton.textContent = 'Mode: ' + currentMode[0].toUpperCase() + currentMode.slice(1);
+      infoModeEl.textContent = currentMode[0].toUpperCase() + currentMode.slice(1);
+    }
+
+    function setLeaderboardModeLabel() {
+      const mode = leaderboardModes[currentLeaderboardIndex];
+      const label = mode[0].toUpperCase() + mode.slice(1);
+      leaderboardModeButton.textContent = 'Leaderboard: ' + label;
+      leaderboardTitle.textContent = 'Leaderboard – ' + label;
+    }
+
+    // -----------------------------
+    // Question generation
+    // -----------------------------
+
+    function generateQuestion() {
+      // Choose word
+      let wordItem;
+      if (currentMode === 'short' || currentMode === 'long') {
+        if (remainingPicturesForRun.length === 0) {
+          remainingPicturesForRun = shuffleArray(ITEM_KEYS);
+        }
+        const picKey = remainingPicturesForRun.shift();
+        const picItem = ITEMS.find(i => i.key === picKey);
+
+        // Decide match vs mismatch
+        const shouldMatch = Math.random() < 0.5;
+        if (shouldMatch) {
+          wordItem = picItem;
+        } else {
+          // pick any other word
+          let otherItem = pickRandomItem(picKey);
+          wordItem = otherItem;
+        }
+
+        // set picture
+        pictureBox.src = picItem.url;
+        pictureBox.alt = picItem.label;
+        lastPictureKey = picItem.key;
+      } else {
+        // practice / infinite: random, but avoid immediate repetition of word & picture
+        let picItem;
+        do {
+          picItem = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+        } while (picItem.key === lastPictureKey);
+
+        const shouldMatch = Math.random() < 0.5;
+        if (shouldMatch) {
+          wordItem = picItem;
+        } else {
+          let otherItem;
+          do {
+            otherItem = pickRandomItem(picItem.key);
+          } while (otherItem.key === lastWordKey);
+          wordItem = otherItem;
+        }
+
+        pictureBox.src = picItem.url;
+        pictureBox.alt = picItem.label;
+        lastPictureKey = picItem.key;
+      }
+
+      lastWordKey = wordItem.key;
+      wordBox.textContent = wordItem.label;
+
+      // Determine actual match of word vs picture
+      const pictureKey = lastPictureKey;
+      const matches = (wordItem.key === pictureKey);
+
+      // Choose relation IS / IS NOT with rule: no more than 2 in a row
+      let relation;
+      if (!lastRelation) {
+        relation = Math.random() < 0.5 ? 'is' : 'is not';
+        relationStreak = 1;
+      } else {
+        const canRepeat = relationStreak < 2;
+        if (canRepeat && Math.random() < 0.5) {
+          relation = lastRelation;
+          relationStreak += 1;
+        } else {
+          relation = lastRelation === 'is' ? 'is not' : 'is';
+          relationStreak = 1;
+        }
+      }
+      lastRelation = relation;
+
+      relationBox.innerHTML = '';
+      const span = document.createElement('span');
+      if (relation === 'is') {
+        span.textContent = 'IS';
+        span.className = 'relation-is';
+      } else {
+        span.textContent = 'IS NOT';
+        span.className = 'relation-not';
+      }
+      relationBox.appendChild(span);
+
+      // Determine correct answer (true/false)
+      let baseTruth = matches;
+      if (relation === 'is not') {
+        baseTruth = !baseTruth;
+      }
+      currentCorrectAnswerIsTrue = baseTruth;
+
+      // Per-question timing start
+      lastQuestionTime = performance.now();
+
+      // Infinite: update time limit and schedule timeout
+      if (currentMode === 'infinite' && infiniteActive) {
+        updateInfiniteTimeLimit();
+        updateInfoPanel();
+        scheduleInfiniteTimeout();
+      }
+    }
+
+    // -----------------------------
+    // Run control
+    // -----------------------------
+
+    function startCountdownAndRun() {
+      countdownOverlay.style.display = 'flex';
+      let count = 3;
+      countdownNumber.textContent = count;
+      beep(500, 0.12, 'triangle');
+
+      const interval = setInterval(() => {
+        count -= 1;
+        if (count > 0) {
+          countdownNumber.textContent = count;
+          beep(500, 0.12, 'triangle');
+        } else {
+          clearInterval(interval);
+          countdownOverlay.style.display = 'none';
+          playStartBell();
+          actuallyStartRun();
+        }
+      }, 800);
+    }
+
+    function actuallyStartRun() {
+      resetRunState();
+      runActive = true;
+      startStopButton.classList.add('running');
+      startStopButton.textContent = 'Stop';
+      runStartTime = performance.now();
+      startRunTimer();
+
+      if (currentMode === 'short') {
+        totalQuestionsTarget = 10;
+      } else if (currentMode === 'long') {
+        totalQuestionsTarget = 20;
+      } else {
+        totalQuestionsTarget = null;
+      }
+
+      if (currentMode === 'infinite') {
+        infiniteActive = true;
+        infiniteQuestionsAnswered = 0;
+        infiniteTimeLimitMs = INFINITE_START_LIMIT_MS;
+      }
+
+      // For short/long, start with a shuffled picture order
+      if (currentMode === 'short' || currentMode === 'long') {
+        remainingPicturesForRun = shuffleArray(ITEM_KEYS);
+      }
+
+      // initial question
+      questionNumber = 0;
+      generateQuestion();
+      questionNumber = 1;
+      updateInfoPanel();
+    }
+
+    function endRun(reason) {
+      if (!runActive) return;
+      runActive = false;
+      runEndReason = reason || 'completed';
+      stopRunTimer();
+      startStopButton.classList.remove('running');
+      startStopButton.textContent = 'Start';
+
+      if (questionTimeoutId) {
+        clearTimeout(questionTimeoutId);
+        questionTimeoutId = null;
+      }
+
+      const now = performance.now();
+      const totalMs = runStartTime ? (now - runStartTime) : 0;
+
+      const answered = perQuestionDurations.length;
+      let avgMs = 0;
+      if (answered > 0) {
+        const sum = perQuestionDurations.reduce((a, b) => a + b, 0);
+        avgMs = sum / answered;
+      }
+
+      updateInfoPanel();
+      playEndChime();
+
+      const validModesForSave = ['short', 'long', 'infinite'];
+
+      if (
+        validModesForSave.includes(currentMode) &&
+        runEndReason !== 'aborted'
+      ) {
+        let totalQuestions;
+        if (currentMode === 'infinite') {
+          totalQuestions = infiniteQuestionsAnswered;
+        } else {
+          totalQuestions = totalQuestionsTarget || questionNumber;
+        }
+
+        if (totalQuestions > 0) {
+          const initialsRaw = (initialsInput.value || '').trim().toUpperCase();
+          const initials = initialsRaw || '???';
+
+          const payload = {
+            initials,
+            mode: currentMode,
+            correct: correctCount,
+            totalQuestions: totalQuestions,
+            totalTimeMs: totalMs,
+            avgTimeMs: avgMs
+          };
+          saveScoreToServer(payload).then(() => {
+            const viewMode = leaderboardModes[currentLeaderboardIndex];
+            if (viewMode === currentMode) {
+              updateLeaderboardUI(viewMode);
+            }
+          });
         }
       }
     }
 
-    if (qualifies) {
-      leaderboard.sort(compareRuns);
-      leaderboard = leaderboard.slice(0, 100);
-      stats.leaderboard[modeKey] = leaderboard;
+    function handleInfiniteFailure(reason) {
+      infiniteActive = false;
+      playWrong();
+      endRun(reason);
     }
 
-    saveStats();
-    renderLeaderboard(leaderboardViewMode);
-    const best = stats.runs[modeKey].bestRun;
-    showSummary(run, best, isPersonalBest, leaderboardMessage);
-    playFinishBell();
-  }
+    // -----------------------------
+    // Answer handling
+    // -----------------------------
 
-  function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
-    el.summaryMode.textContent =
-      run.mode === "practice"
-        ? "Practice"
-        : run.mode === "short"
-        ? "Short (10)"
-        : "Long (20)";
+    function handleAnswer(userChoseTrue) {
+      if (!runActive) return;
 
-    el.summaryQuestions.textContent = run.questions;
-    el.summaryCorrect.textContent = run.correct;
-    el.summaryIncorrect.textContent = run.incorrect;
-    el.summaryTotalTime.textContent = formatSeconds(run.totalTime);
-    el.summaryAvgTime.textContent = formatSeconds(run.avgReaction);
+      const now = performance.now();
 
-    if (bestRun && run.mode !== "practice") {
-      el.summaryBest.textContent =
-        "IC:" +
-        bestRun.incorrect +
-        ", Total: " +
-        formatSeconds(bestRun.totalTime) +
-        ", Avg: " +
-        formatSeconds(bestRun.avgReaction);
-    } else if (run.mode === "practice") {
-      el.summaryBest.textContent = "Not tracked for practice mode.";
-    } else {
-      el.summaryBest.textContent = "—";
-    }
-
-    let msg = leaderboardMessage || "";
-    if (run.mode !== "practice") {
-      if (isPersonalBest) {
-        msg += (msg ? " " : "") + "Personal best for this mode!";
-      } else if (!msg) {
-        msg = "Keep going to beat your best score.";
-      }
-    }
-    el.summaryMessage.textContent = msg;
-    el.summaryMessage.classList.toggle("highlight", isPersonalBest);
-    el.summaryPanel.style.display = "block";
-  }
-
-  function renderLeaderboard(modeKey) {
-    leaderboardViewMode = modeKey;
-    const list = stats.leaderboard[modeKey] || [];
-    el.leaderboardBody.innerHTML = "";
-
-    el.leaderboardModeLabel.textContent =
-      modeKey === "short" ? "Short" : "Long";
-
-    el.leaderboardToggleButton.textContent =
-      "View: " + (modeKey === "short" ? "Short" : "Long");
-
-    list.forEach((entry, index) => {
-      const tr = document.createElement("tr");
-      const rank = index + 1;
-
-      function cell(text) {
-        const td = document.createElement("td");
-        td.textContent = text;
-        return td;
+      if (questionTimeoutId) {
+        clearTimeout(questionTimeoutId);
+        questionTimeoutId = null;
       }
 
-      tr.appendChild(cell(rank));
-      tr.appendChild(cell(entry.initials || "???"));
-      tr.appendChild(cell(entry.questions));
-      tr.appendChild(cell(entry.correct));
-      tr.appendChild(cell(entry.incorrect));
-      tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
-      tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+      let questionDuration = 0;
+      if (lastQuestionTime != null) {
+        questionDuration = now - lastQuestionTime;
+        perQuestionDurations.push(questionDuration);
+      }
 
-      el.leaderboardBody.appendChild(tr);
-    });
-  }
+      const isCorrect = (userChoseTrue === currentCorrectAnswerIsTrue);
 
-  function toggleLeaderboardMode() {
-    if (leaderboardViewMode === "short") {
-      renderLeaderboard("long");
-    } else {
-      renderLeaderboard("short");
-    }
-  }
-
-  function handleOrientationWarning() {
-    const isMobile =
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0 ||
-      window.innerWidth < 900;
-    const portrait = window.innerHeight > window.innerWidth;
-    el.orientationWarning.style.display =
-      isMobile && portrait ? "block" : "none";
-  }
-
-  function startCountdownThenRun() {
-    if (countdownActive || runActive) return;
-    countdownActive = true;
-    el.summaryPanel.style.display = "none";
-
-    el.wordDisplay.textContent = "Get ready...";
-    el.relationLabel.textContent = "";
-    el.relationLabel.classList.remove("pow-relation-not");
-
-    el.falseButton.disabled = true;
-    el.trueButton.disabled = true;
-
-    el.startStopButton.textContent = "Stop";
-
-    const steps = [3, 2, 1];
-    let delay = 500;
-
-    steps.forEach((num, idx) => {
-      const t = setTimeout(() => {
-        el.wordDisplay.textContent = String(num);
-        playCountdownBeep(idx);
-      }, delay);
-      countdownTimers.push(t);
-      delay += 1000;
-    });
-
-    const finalTimeout = setTimeout(() => {
-      countdownActive = false;
-      playStartBell();
-      actuallyStartRun();
-    }, delay);
-    countdownTimers.push(finalTimeout);
-  }
-
-  function actuallyStartRun() {
-    if (runActive) return;
-    runActive = true;
-    el.falseButton.disabled = false;
-    el.trueButton.disabled = false;
-
-    el.startStopButton.textContent = "Stop";
-
-    sessionStartTime = performance.now();
-    timerInterval = setInterval(updateTimer, 50);
-    nextQuestion();
-  }
-
-  function stopRun(manual) {
-    if (!runActive && !countdownActive) return;
-
-    clearCountdownTimers();
-    countdownActive = false;
-
-    if (!runActive) {
-      resetState();
-      return;
-    }
-
-    runActive = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-    currentQuestionActive = false;
-
-    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
-    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
-
-    el.startStopButton.textContent = "Start";
-
-    if (currentMode === "practice") {
-      showSummary(
-        {
-          mode: currentMode,
-          questions: questionCount,
-          correct: correctCount,
-          incorrect: incorrectCount,
-          totalTime: totalTimeSec,
-          avgReaction: avgReaction
-        },
-        null,
-        false,
-        manual ? "Practice session stopped." : "Practice session complete."
-      );
-      playFinishBell();
-    } else {
-      if (questionCount < targetQuestions) {
-        showSummary(
-          {
-            mode: currentMode,
-            questions: questionCount,
-            correct: correctCount,
-            incorrect: incorrectCount,
-            totalTime: totalTimeSec,
-            avgReaction: avgReaction
-          },
-          stats.runs[currentMode]?.bestRun || null,
-          false,
-          "Run stopped before completion. Not recorded for leaderboard or best score."
-        );
-        playFinishBell();
+      if (isCorrect) {
+        correctCount += 1;
+        playCorrect();
       } else {
-        finalizeRun();
+        incorrectCount += 1;
+        playWrong();
+      }
+
+      if (currentMode === 'infinite') {
+        if (!isCorrect) {
+          handleInfiniteFailure('error');
+          return;
+        } else {
+          infiniteQuestionsAnswered += 1;
+          questionNumber += 1;
+          updateInfoPanel();
+          generateQuestion();
+          return;
+        }
+      }
+
+      // Practice / short / long
+      questionNumber += 1;
+      updateInfoPanel();
+
+      if ((currentMode === 'short' || currentMode === 'long') && totalQuestionsTarget != null) {
+        if (questionNumber > totalQuestionsTarget) {
+          endRun('completed');
+          return;
+        }
+      }
+
+      generateQuestion();
+    }
+
+    // -----------------------------
+    // Backend interactions
+    // -----------------------------
+
+    async function saveScoreToServer(payload) {
+      try {
+        await fetch(API_BASE + '/saveScore', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error('Error saving score:', err);
       }
     }
-  }
 
-  el.modeToggleButton.addEventListener("click", cycleMode);
-
-  el.startStopButton.addEventListener("click", function () {
-    if (!runActive && !countdownActive) {
-      resetState();
-      if (currentMode !== "practice") {
-        prepareSequencesForRun();
+    async function fetchLeaderboardFromServer(mode) {
+      try {
+        const res = await fetch(API_BASE + '/leaderboard?mode=' + encodeURIComponent(mode));
+        if (!res.ok) {
+          console.error('Leaderboard fetch failed with status', res.status);
+          return [];
+        }
+        const data = await res.json();
+        return data.results || [];
+      } catch (err) {
+        console.error('Error fetching leaderboard:', err);
+        return [];
       }
-      startCountdownThenRun();
-    } else {
-      stopRun(true);
     }
-  });
 
-  el.falseButton.addEventListener("click", function () { handleAnswer(false); });
-  el.trueButton.addEventListener("click", function () { handleAnswer(true); });
+    async function updateLeaderboardUI(mode) {
+      const rows = await fetchLeaderboardFromServer(mode);
+      leaderboardBody.innerHTML = '';
+      rows.forEach(entry => {
+        const tr = document.createElement('tr');
 
-  window.addEventListener("keydown", function (e) {
-    if (!runActive || countdownActive) return;
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      handleAnswer(false);
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
+        const rankTd = document.createElement('td');
+        rankTd.className = 'rank-cell';
+        rankTd.textContent = entry.rank;
+
+        const initTd = document.createElement('td');
+        initTd.className = 'initials-cell';
+        initTd.textContent = entry.initials;
+
+        const correctTd = document.createElement('td');
+        correctTd.textContent = entry.correct;
+
+        const totalTd = document.createElement('td');
+        totalTd.textContent = entry.totalQuestions;
+
+        const totalTimeTd = document.createElement('td');
+        totalTimeTd.textContent = (entry.totalTimeMs / 1000).toFixed(2) + 's';
+
+        const avgTimeTd = document.createElement('td');
+        avgTimeTd.textContent = (entry.avgTimeMs / 1000).toFixed(2) + 's';
+
+        tr.appendChild(rankTd);
+        tr.appendChild(initTd);
+        tr.appendChild(correctTd);
+        tr.appendChild(totalTd);
+        tr.appendChild(totalTimeTd);
+        tr.appendChild(avgTimeTd);
+
+        leaderboardBody.appendChild(tr);
+      });
+    }
+
+    // -----------------------------
+    // Event wiring
+    // -----------------------------
+
+    modeButton.addEventListener('click', () => {
+      if (runActive) return;
+      currentModeIndex = (currentModeIndex + 1) % modes.length;
+      currentMode = modes[currentModeIndex];
+      setModeLabel();
+      resetRunState();
+    });
+
+    startStopButton.addEventListener('click', () => {
+      if (!runActive) {
+        // Start
+        startCountdownAndRun();
+      } else {
+        // Stop early – abort
+        endRun('aborted');
+      }
+    });
+
+    trueButton.addEventListener('click', () => {
       handleAnswer(true);
-    }
-  });
+    });
 
-  el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
-  window.addEventListener("resize", handleOrientationWarning);
+    falseButton.addEventListener('click', () => {
+      handleAnswer(false);
+    });
 
-  el.instructionsCloseBtn.addEventListener("click", function () {
-    el.instructionsModal.style.display = "none";
-  });
+    document.addEventListener('keydown', (e) => {
+      if (!runActive) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleAnswer(false);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleAnswer(true);
+      }
+    });
 
-  applyModeUI();
-  resetState();
-  renderLeaderboard("short");
-  handleOrientationWarning();
-})();
-</script>
+    leaderboardModeButton.addEventListener('click', () => {
+      currentLeaderboardIndex = (currentLeaderboardIndex + 1) % leaderboardModes.length;
+      setLeaderboardModeLabel();
+      const mode = leaderboardModes[currentLeaderboardIndex];
+      updateLeaderboardUI(mode);
+    });
+
+    refreshLeaderboardButton.addEventListener('click', () => {
+      const mode = leaderboardModes[currentLeaderboardIndex];
+      updateLeaderboardUI(mode);
+    });
+
+    closeInstructionsButton.addEventListener('click', () => {
+      instructionsModal.style.display = 'none';
+    });
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+
+    // Show a random placeholder picture at load
+    (function initPlaceholder() {
+      const item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+      pictureBox.src = item.url;
+      pictureBox.alt = item.label;
+      wordBox.textContent = item.label;
+    })();
+
+    setModeLabel();
+    setLeaderboardModeLabel();
+    updateInfoPanel();
+    updateLeaderboardUI('short');
+  </script>
 </body>
 </html>
