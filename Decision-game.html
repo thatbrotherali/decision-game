@@ -543,9 +543,9 @@
   </div>
 
   <div class="pow-helper-text" id="helperText">
-    Tap <strong>Mode</strong> to switch between Practice / Short / Long, then press
-    <strong>Start</strong>.<br />
-    You now see a <strong>picture on the left</strong>, a middle box that says
+    Tap <strong>Mode</strong> to switch between Practice / Short / Long / Infinite,
+    then press <strong>Start</strong>.<br />
+    You see a <strong>picture on the left</strong>, a middle box that says
     <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br />
     Answer <strong>True</strong> if that full sentence is correct.<br />
     On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
@@ -590,7 +590,7 @@
         <div class="pow-leaderboard-title">
           Leaderboard <span id="leaderboardModeLabel" class="pow-tag">Short</span>
         </div>
-        <div class="pow-message">
+        <div class="pow-message" id="leaderboardRankingInfo">
           Ranked by fewest mistakes, then total time, then average reaction.
         </div>
       </div>
@@ -647,20 +647,24 @@
     <div class="pow-modal-section-title">Modes</div>
     <div class="pow-modal-text">
       • <strong>Practice</strong>: Infinite questions, just train. Time and average reaction are shown, but not ranked.<br/>
-      • <strong>Short</strong>: 10 questions, used for the leaderboard.<br/>
-      • <strong>Long</strong>: 20 questions, also ranked separately.
+      • <strong>Short</strong>: 10 questions, recorded and ranked locally.<br/>
+      • <strong>Long</strong>: 20 questions, recorded and ranked separately.<br/>
+      • <strong>Infinite</strong>: Keeps going until your <strong>first mistake or timeout</strong>.
+      The allowed time per question starts at <strong>1.0s</strong> and gets
+      <strong>0.1s shorter every 50 correct answers</strong>, down to a minimum of <strong>0.3s</strong>.
     </div>
 
     <div class="pow-modal-section-title">Scoring & sounds</div>
     <div class="pow-modal-text">
       • You get a <strong>green ding</strong> for a correct answer.<br/>
-      • A <strong>low buzzer</strong> means the answer was wrong.<br/>
+      • A <strong>low buzzer</strong> means the answer (or timeout) was wrong.<br/>
       • A <strong>start bell</strong> plays after the 3-2-1 countdown.<br/>
       • A <strong>finish bell</strong> plays at the end of each run.
     </div>
     <div class="pow-modal-text">
-      The leaderboard keeps only your <strong>best score per mode</strong>, based on:
-      fewest mistakes, then total time, then average reaction time.
+      Locally, the leaderboard keeps only your <strong>best score per mode</strong>:
+      for Short/Long it ranks by fewest mistakes, then total time, then average reaction.
+      For Infinite it ranks by most correct, then average reaction, then total time.
     </div>
 
     <div class="pow-modal-footer">
@@ -694,7 +698,7 @@
     { key: "cherry", label: "Cherry", url: "https://static.wixstatic.com/media/eaef6d_97c92754a41d489eb0bb984377487207~mv2.png" }
   ];
 
-  const STORAGE_KEY = "powDecisionGameStats_v1";
+  const STORAGE_KEY = "powDecisionGameStats_v2"; // bump version due to infinite mode
 
   const el = {
     modeToggleButton: document.getElementById("modeToggleButton"),
@@ -722,6 +726,7 @@
     leaderboardBody: document.getElementById("leaderboardBody"),
     leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
     leaderboardToggleButton: document.getElementById("leaderboardToggleButton"),
+    leaderboardRankingInfo: document.getElementById("leaderboardRankingInfo"),
     orientationWarning: document.getElementById("orientationWarning"),
     instructionsModal: document.getElementById("instructionsModal"),
     instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
@@ -792,7 +797,7 @@
   }
 
   /* ---- Game state ---- */
-  let currentMode = "short"; // practice | short | long
+  let currentMode = "short"; // practice | short | long | infinite
   let targetQuestions = 10;
   let questionCount = 0;
   let correctCount = 0;
@@ -820,9 +825,31 @@
   let leaderboardViewMode = "short";
   let stats = loadStats();
 
+  // Infinite mode timing
+  const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
+  const INFINITE_MIN_TIME_LIMIT = 0.3;
+  let infiniteTimeLimit = INFINITE_BASE_TIME_LIMIT;
+  let questionTimeoutId = null;
+
   function clearCountdownTimers() {
     countdownTimers.forEach(id => clearTimeout(id));
     countdownTimers = [];
+  }
+
+  function clearQuestionTimeout() {
+    if (questionTimeoutId !== null) {
+      clearTimeout(questionTimeoutId);
+      questionTimeoutId = null;
+    }
+  }
+
+  function updateInfiniteTimeLimit() {
+    // For each 50 correct answers, drop 0.1s, down to 0.3s
+    const steps = Math.floor(correctCount / 50);
+    const candidate = INFINITE_BASE_TIME_LIMIT - 0.1 * steps;
+    infiniteTimeLimit = candidate < INFINITE_MIN_TIME_LIMIT
+      ? INFINITE_MIN_TIME_LIMIT
+      : candidate;
   }
 
   function loadStats() {
@@ -833,27 +860,40 @@
           playerInitials: "",
           runs: {
             short: { firstRun: null, bestRun: null, lastRun: null },
-            long: { firstRun: null, bestRun: null, lastRun: null }
+            long: { firstRun: null, bestRun: null, lastRun: null },
+            infinite: { firstRun: null, bestRun: null, lastRun: null }
           },
-          leaderboard: { short: [], long: [] }
+          leaderboard: {
+            short: [],
+            long: [],
+            infinite: []
+          }
         };
       }
       const parsed = JSON.parse(raw);
+
       if (!parsed.runs) {
         parsed.runs = {
           short: { firstRun: null, bestRun: null, lastRun: null },
-          long: { firstRun: null, bestRun: null, lastRun: null }
+          long: { firstRun: null, bestRun: null, lastRun: null },
+          infinite: { firstRun: null, bestRun: null, lastRun: null }
         };
+      } else {
+        if (!parsed.runs.short)
+          parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.long)
+          parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.infinite)
+          parsed.runs.infinite = { firstRun: null, bestRun: null, lastRun: null };
       }
+
       if (!parsed.leaderboard) {
-        parsed.leaderboard = { short: [], long: [] };
+        parsed.leaderboard = { short: [], long: [], infinite: [] };
+      } else {
+        if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
+        if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
+        if (!parsed.leaderboard.infinite) parsed.leaderboard.infinite = [];
       }
-      if (!parsed.runs.short)
-        parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
-      if (!parsed.runs.long)
-        parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
-      if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
-      if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
 
       if (parsed.playerInitials === "???") parsed.playerInitials = "";
 
@@ -863,9 +903,10 @@
         playerInitials: "",
         runs: {
           short: { firstRun: null, bestRun: null, lastRun: null },
-          long: { firstRun: null, bestRun: null, lastRun: null }
+          long: { firstRun: null, bestRun: null, lastRun: null },
+          infinite: { firstRun: null, bestRun: null, lastRun: null }
         },
-        leaderboard: { short: [], long: [] }
+        leaderboard: { short: [], long: [], infinite: [] }
       };
     }
   }
@@ -894,6 +935,7 @@
   function resetState() {
     clearCountdownTimers();
     countdownActive = false;
+    clearQuestionTimeout();
 
     questionCount = 0;
     correctCount = 0;
@@ -914,6 +956,7 @@
 
     lastIsNot = null;
     relationStreak = 0;
+    infiniteTimeLimit = INFINITE_BASE_TIME_LIMIT;
 
     el.statusTotalTime.textContent = "0.00s";
     el.statusAvgTime.textContent = "0.00s";
@@ -951,10 +994,14 @@
       label = "Mode: Short (10)";
       el.statusMode.textContent = "Short (10)";
       el.statusQuestion.textContent = "0 / 10";
-    } else {
+    } else if (currentMode === "long") {
       label = "Mode: Long (20)";
       el.statusMode.textContent = "Long (20)";
       el.statusQuestion.textContent = "0 / 20";
+    } else {
+      label = "Mode: Infinite";
+      el.statusMode.textContent = "Infinite";
+      el.statusQuestion.textContent = "0 / ∞";
     }
     el.modeToggleButton.textContent = label;
   }
@@ -970,6 +1017,9 @@
       targetQuestions = 10;
     } else if (mode === "long") {
       targetQuestions = 20;
+    } else {
+      // infinite
+      targetQuestions = Infinity;
     }
     resetState();
     applyModeUI();
@@ -980,13 +1030,16 @@
       setMode("short");
     } else if (currentMode === "short") {
       setMode("long");
+    } else if (currentMode === "long") {
+      setMode("infinite");
     } else {
       setMode("practice");
     }
   }
 
   function prepareSequencesForRun() {
-    if (currentMode === "practice") {
+    // Pre-set sequences only for short/long (fixed-length), not for practice/infinite
+    if (currentMode === "practice" || currentMode === "infinite") {
       wordOrder = [];
       pictureOrder = [];
       return;
@@ -1042,18 +1095,23 @@
   function nextQuestion() {
     if (!runActive) return;
 
-    if (currentMode !== "practice" && questionCount >= targetQuestions) {
+    // For fixed modes, stop if we've hit target
+    if (currentMode !== "practice" && currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
       stopRun(false);
       return;
     }
+
+    clearQuestionTimeout();
 
     let wordIndex;
     let imageIndex;
     let isNot;
 
-    if (currentMode === "practice") {
+    if (currentMode === "practice" || currentMode === "infinite") {
       if (ITEMS.length === 0) return;
 
+      // Word: never the same consecutively
       if (ITEMS.length === 1) {
         wordIndex = 0;
       } else {
@@ -1062,6 +1120,7 @@
         } while (wordIndex === lastWordIndex);
       }
 
+      // Picture: never the same consecutively
       if (ITEMS.length === 1) {
         imageIndex = 0;
       } else {
@@ -1104,10 +1163,34 @@
 
     const totalQ = isFinite(targetQuestions) ? targetQuestions : "∞";
     el.statusQuestion.textContent = (questionCount + 1) + " / " + totalQ;
+
+    if (currentMode === "infinite") {
+      updateInfiniteTimeLimit();
+      questionTimeoutId = setTimeout(handleTimeout, infiniteTimeLimit * 1000);
+    }
+  }
+
+  function handleTimeout() {
+    // Only used in infinite mode
+    if (!runActive || !currentQuestionActive || currentMode !== "infinite") return;
+    currentQuestionActive = false;
+    clearQuestionTimeout();
+
+    questionCount++;
+    incorrectCount++;
+    totalReactionTime += infiniteTimeLimit; // treat as full allotted time
+    el.statusCorrect.textContent = String(correctCount);
+    el.statusIncorrect.textContent = String(incorrectCount);
+
+    playWrongBuzz();
+    // Timeout ends infinite run
+    stopRun(false);
   }
 
   function handleAnswer(answerIsTrue) {
     if (!runActive || !currentQuestionActive) return;
+
+    clearQuestionTimeout();
 
     const now = performance.now();
     const reactionSec = lastQuestionTime ? (now - lastQuestionTime) / 1000 : 0;
@@ -1126,7 +1209,13 @@
     el.statusCorrect.textContent = String(correctCount);
     el.statusIncorrect.textContent = String(incorrectCount);
 
-    if (currentMode !== "practice" && questionCount >= targetQuestions) {
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
+      currentQuestionActive = false;
+      stopRun(false);
+    } else if (currentMode === "infinite" && !isCorrect) {
+      // First mistake ends infinite run
       currentQuestionActive = false;
       stopRun(false);
     } else {
@@ -1134,15 +1223,30 @@
     }
   }
 
-  function compareRuns(a, b) {
+  // Comparators --------------------------------
+
+  // Short/Long: fewest mistakes, then lowest totalTime, then lowest avgReaction
+  function compareShortLong(a, b) {
     if (a.incorrect !== b.incorrect) return a.incorrect - b.incorrect;
     if (a.totalTime !== b.totalTime) return a.totalTime - b.totalTime;
     return a.avgReaction - b.avgReaction;
   }
 
-  function isBetterRun(candidate, baseline) {
+  // Infinite: most correct, then lowest avgReaction, then lowest totalTime
+  function compareInfinite(a, b) {
+    if (a.correct !== b.correct) return b.correct - a.correct;
+    if (a.avgReaction !== b.avgReaction) return a.avgReaction - b.avgReaction;
+    return a.totalTime - b.totalTime;
+  }
+
+  function compareRunsByMode(mode, a, b) {
+    if (mode === "infinite") return compareInfinite(a, b);
+    return compareShortLong(a, b);
+  }
+
+  function isBetterRun(mode, candidate, baseline) {
     if (!baseline) return true;
-    return compareRuns(candidate, baseline) < 0;
+    return compareRunsByMode(mode, candidate, baseline) < 0;
   }
 
   function ensureInitials() {
@@ -1175,9 +1279,16 @@
 
   function finalizeRun() {
     if (!currentMode || currentMode === "practice") return;
-    if (currentMode !== "practice" && isFinite(targetQuestions) && questionCount < targetQuestions) {
+
+    // For short/long we only record fully completed runs
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        isFinite(targetQuestions) &&
+        questionCount < targetQuestions) {
       return;
     }
+
+    if (questionCount <= 0) return;
 
     const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
     const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
@@ -1201,7 +1312,7 @@
     runBucket.lastRun = run;
 
     let isPersonalBest = false;
-    if (!runBucket.bestRun || isBetterRun(run, runBucket.bestRun)) {
+    if (!runBucket.bestRun || isBetterRun(modeKey, run, runBucket.bestRun)) {
       runBucket.bestRun = run;
       isPersonalBest = true;
     }
@@ -1226,9 +1337,11 @@
       e => (e.initials || "???").toUpperCase() === normalizedInitials
     );
 
+    const compareFn = (a, b) => compareRunsByMode(modeKey, a, b);
+
     if (existingIndex >= 0) {
       const existing = leaderboard[existingIndex];
-      if (compareRuns(run, existing) < 0) {
+      if (compareFn(run, existing) < 0) {
         leaderboard[existingIndex] = entry;
         qualifies = true;
         leaderboardMessage = "You improved your best score for this mode.";
@@ -1244,7 +1357,7 @@
         leaderboardMessage = "This run made it into the top 100 for this mode.";
       } else {
         const worst = leaderboard[leaderboard.length - 1];
-        if (compareRuns(run, worst) < 0) {
+        if (compareFn(run, worst) < 0) {
           leaderboard.push(entry);
           qualifies = true;
           leaderboardMessage =
@@ -1258,7 +1371,7 @@
     }
 
     if (qualifies) {
-      leaderboard.sort(compareRuns);
+      leaderboard.sort(compareFn);
       leaderboard = leaderboard.slice(0, 100);
       stats.leaderboard[modeKey] = leaderboard;
     }
@@ -1271,12 +1384,13 @@
   }
 
   function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
-    el.summaryMode.textContent =
-      run.mode === "practice"
-        ? "Practice"
-        : run.mode === "short"
-        ? "Short (10)"
-        : "Long (20)";
+    let modeLabel;
+    if (run.mode === "practice") modeLabel = "Practice";
+    else if (run.mode === "short") modeLabel = "Short (10)";
+    else if (run.mode === "long") modeLabel = "Long (20)";
+    else modeLabel = "Infinite";
+
+    el.summaryMode.textContent = modeLabel;
 
     el.summaryQuestions.textContent = run.questions;
     el.summaryCorrect.textContent = run.correct;
@@ -1284,16 +1398,26 @@
     el.summaryTotalTime.textContent = formatSeconds(run.totalTime);
     el.summaryAvgTime.textContent = formatSeconds(run.avgReaction);
 
-    if (bestRun && run.mode !== "practice") {
-      el.summaryBest.textContent =
-        "IC:" +
-        bestRun.incorrect +
-        ", Total: " +
-        formatSeconds(bestRun.totalTime) +
-        ", Avg: " +
-        formatSeconds(bestRun.avgReaction);
-    } else if (run.mode === "practice") {
+    if (run.mode === "practice") {
       el.summaryBest.textContent = "Not tracked for practice mode.";
+    } else if (bestRun) {
+      if (run.mode === "infinite") {
+        el.summaryBest.textContent =
+          "Correct: " +
+          bestRun.correct +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction) +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime);
+      } else {
+        el.summaryBest.textContent =
+          "IC:" +
+          bestRun.incorrect +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime) +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction);
+      }
     } else {
       el.summaryBest.textContent = "—";
     }
@@ -1305,7 +1429,10 @@
       } else if (!msg) {
         msg = "Keep going to beat your best score.";
       }
+    } else if (!msg) {
+      msg = "Practice session complete.";
     }
+
     el.summaryMessage.textContent = msg;
     el.summaryMessage.classList.toggle("highlight", isPersonalBest);
     el.summaryPanel.style.display = "block";
@@ -1316,11 +1443,22 @@
     const list = stats.leaderboard[modeKey] || [];
     el.leaderboardBody.innerHTML = "";
 
-    el.leaderboardModeLabel.textContent =
-      modeKey === "short" ? "Short" : "Long";
-
-    el.leaderboardToggleButton.textContent =
-      "View: " + (modeKey === "short" ? "Short" : "Long");
+    if (modeKey === "short") {
+      el.leaderboardModeLabel.textContent = "Short";
+      el.leaderboardToggleButton.textContent = "View: Short";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by fewest mistakes, then total time, then average reaction.";
+    } else if (modeKey === "long") {
+      el.leaderboardModeLabel.textContent = "Long";
+      el.leaderboardToggleButton.textContent = "View: Long";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by fewest mistakes, then total time, then average reaction.";
+    } else {
+      el.leaderboardModeLabel.textContent = "Infinite";
+      el.leaderboardToggleButton.textContent = "View: Infinite";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by most correct, then average reaction, then total time.";
+    }
 
     list.forEach((entry, index) => {
       const tr = document.createElement("tr");
@@ -1347,6 +1485,8 @@
   function toggleLeaderboardMode() {
     if (leaderboardViewMode === "short") {
       renderLeaderboard("long");
+    } else if (leaderboardViewMode === "long") {
+      renderLeaderboard("infinite");
     } else {
       renderLeaderboard("short");
     }
@@ -1414,6 +1554,7 @@
 
     clearCountdownTimers();
     countdownActive = false;
+    clearQuestionTimeout();
 
     if (!runActive) {
       resetState();
@@ -1445,7 +1586,27 @@
         manual ? "Practice session stopped." : "Practice session complete."
       );
       playFinishBell();
+    } else if (currentMode === "infinite") {
+      if (manual) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs.infinite?.bestRun || null,
+          false,
+          "Infinite run stopped manually. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
     } else {
+      // short / long
       if (questionCount < targetQuestions) {
         showSummary(
           {
@@ -1467,12 +1628,14 @@
     }
   }
 
+  // ---- Event wiring ----
+
   el.modeToggleButton.addEventListener("click", cycleMode);
 
   el.startStopButton.addEventListener("click", function () {
     if (!runActive && !countdownActive) {
       resetState();
-      if (currentMode !== "practice") {
+      if (currentMode !== "practice" && currentMode !== "infinite") {
         prepareSequencesForRun();
       }
       startCountdownThenRun();
@@ -1502,6 +1665,7 @@
     el.instructionsModal.style.display = "none";
   });
 
+  // ---- Init ----
   applyModeUI();
   resetState();
   renderLeaderboard("short");
