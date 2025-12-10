@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -611,6 +612,7 @@
           <th>IC</th>
           <th>Total (s)</th>
           <th>Avg (s)</th>
+          <th>Date</th>
         </tr>
         </thead>
         <tbody id="leaderboardBody"></tbody>
@@ -699,6 +701,12 @@
   ];
 
   const STORAGE_KEY = "powDecisionGameStats_v2"; // bump version due to infinite mode
+
+  // --- Remote leaderboard API (Wix http-functions) ---
+  const API_BASE = "https://peopleoftheworld.net";
+  const API_SAVE_SCORE = API_BASE + "/_functions/decisionGame/saveScore";
+  const API_LEADERBOARD = API_BASE + "/_functions/decisionGame/leaderboard";
+
 
   const el = {
     modeToggleButton: document.getElementById("modeToggleButton"),
@@ -920,6 +928,69 @@
   function formatSeconds(sec) {
     if (!isFinite(sec) || sec < 0) return "0.00s";
     return sec.toFixed(2) + "s";
+  }
+
+  // Format a date value (timestamp or ISO string) for leaderboard
+  function formatDateForDisplay(value) {
+    if (!value) return "—";
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString();
+    } catch (e) {
+      return "—";
+    }
+  }
+
+  // --- Remote save / load helpers ---
+
+  async function saveScoreToServer(payload) {
+    try {
+      const res = await fetch(API_SAVE_SCORE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        console.warn("saveScoreToServer failed:", res.status, res.statusText);
+        return false;
+      }
+      const data = await res.json().catch(() => null);
+      return data && data.success;
+    } catch (e) {
+      console.warn("saveScoreToServer error:", e);
+      return false;
+    }
+  }
+
+  async function fetchLeaderboardFromServer(modeKey) {
+    try {
+      const url = API_LEADERBOARD + "?mode=" + encodeURIComponent(modeKey);
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.warn("fetchLeaderboardFromServer failed:", res.status, res.statusText);
+        return null;
+      }
+      const data = await res.json().catch(() => null);
+      if (!data || !Array.isArray(data.results)) {
+        return null;
+      }
+      const mapped = data.results.map(row => ({
+        initials: (row.initials || "???").toUpperCase(),
+        questions: row.questions || 0,
+        correct: row.correct || 0,
+        incorrect: (row.questions || 0) - (row.correct || 0),
+        totalTime: row.totalTime || 0,
+        avgReaction: row.avgReaction || 0,
+        date: row.date || null
+      }));
+      stats.leaderboard[modeKey] = mapped;
+      saveStats();
+      return mapped;
+    } catch (e) {
+      console.warn("fetchLeaderboardFromServer error:", e);
+      return null;
+    }
   }
 
   function shuffleArray(arr) {
@@ -1249,18 +1320,33 @@
     return compareRunsByMode(mode, candidate, baseline) < 0;
   }
 
-  function ensureInitials() {
-    const prev = (stats.playerInitials || "").trim().toUpperCase();
-    const hasValidPrev = prev && prev !== "???";
-    if (hasValidPrev) return prev;
+  function ensureInitials(forcePromptForEdit) {
+    const prevRaw = (stats.playerInitials || "").trim().toUpperCase();
+    const hasValidPrev = prevRaw && prevRaw !== "???";
 
-    let initials = "";
+    // If we are not forcing a prompt and we already have initials, reuse them.
+    if (!forcePromptForEdit && hasValidPrev) return prevRaw;
+
+    let initials = prevRaw || "";
+
     while (true) {
-      const input = prompt("Enter your initials (1–4 characters):", "") || "";
+      const message =
+        hasValidPrev && forcePromptForEdit
+          ? "You achieved a new personal best. Update your initials (1–4 characters), or leave as-is:"
+          : "Enter your initials (1–4 characters):";
+
+      const input = prompt(message, initials) || "";
       initials = input.trim().toUpperCase();
 
       if (!initials) {
-        if (!confirm("No initials entered. Try again?")) break;
+        if (hasValidPrev) {
+          // User cleared or cancelled – keep previous initials
+          initials = prevRaw;
+          break;
+        }
+        if (!confirm("No initials entered. Try again?")) {
+          break;
+        }
       } else {
         if (initials.length > 4) initials = initials.substring(0, 4);
         break;
@@ -1273,7 +1359,7 @@
       return initials;
     }
 
-    if (hasValidPrev) return prev;
+    if (hasValidPrev) return prevRaw;
     return "???";
   }
 
@@ -1292,6 +1378,7 @@
 
     const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
     const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+    const timestamp = Date.now();
 
     const run = {
       mode: currentMode,
@@ -1300,7 +1387,7 @@
       incorrect: incorrectCount,
       totalTime: totalTimeSec,
       avgReaction: avgReaction,
-      timestamp: Date.now()
+      timestamp: timestamp
     };
 
     const modeKey = currentMode;
@@ -1317,7 +1404,7 @@
       isPersonalBest = true;
     }
 
-    const initials = ensureInitials();
+    const initials = ensureInitials(isPersonalBest);
     const normalizedInitials = (initials || "???").toUpperCase();
     let leaderboard = stats.leaderboard[modeKey] || [];
     let leaderboardMessage = "";
@@ -1330,7 +1417,8 @@
       incorrect: run.incorrect,
       totalTime: run.totalTime,
       avgReaction: run.avgReaction,
-      timestamp: run.timestamp
+      timestamp: run.timestamp,
+      date: run.timestamp
     };
 
     const existingIndex = leaderboard.findIndex(
@@ -1341,7 +1429,7 @@
 
     if (existingIndex >= 0) {
       const existing = leaderboard[existingIndex];
-      if (compareFn(run, existing) < 0) {
+      if (compareFn(entry, existing) < 0) {
         leaderboard[existingIndex] = entry;
         qualifies = true;
         leaderboardMessage = "You improved your best score for this mode.";
@@ -1354,11 +1442,13 @@
       if (leaderboard.length < 100) {
         leaderboard.push(entry);
         qualifies = true;
-        leaderboardMessage = "This run made it into the top 100 for this mode.";
+        leaderboardMessage =
+          "This run made it into the top 100 for this mode.";
       } else {
+        leaderboard.sort(compareFn);
         const worst = leaderboard[leaderboard.length - 1];
-        if (compareFn(run, worst) < 0) {
-          leaderboard.push(entry);
+        if (compareFn(entry, worst) < 0) {
+          leaderboard[leaderboard.length - 1] = entry;
           qualifies = true;
           leaderboardMessage =
             "This run made it into the top 100 for this mode.";
@@ -1381,6 +1471,27 @@
     const best = stats.runs[modeKey].bestRun;
     showSummary(run, best, isPersonalBest, leaderboardMessage);
     playFinishBell();
+
+    // Fire-and-forget remote save + refresh. Ignore errors so local flow is never blocked.
+    if (modeKey === "short" || modeKey === "long" || modeKey === "infinite") {
+      const payload = {
+        initials: normalizedInitials,
+        mode: modeKey,
+        correct: run.correct,
+        questions: run.questions,
+        totalTime: run.totalTime,
+        avgReaction: run.avgReaction
+      };
+      (async () => {
+        const okRemote = await saveScoreToServer(payload);
+        if (okRemote) {
+          await fetchLeaderboardFromServer(modeKey);
+          if (leaderboardViewMode === modeKey) {
+            renderLeaderboard(modeKey);
+          }
+        }
+      })();
+    }
   }
 
   function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
@@ -1477,6 +1588,7 @@
       tr.appendChild(cell(entry.incorrect));
       tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
       tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+      tr.appendChild(cell(formatDateForDisplay(entry.date || entry.timestamp)));
 
       el.leaderboardBody.appendChild(tr);
     });
