@@ -1717,31 +1717,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 <script>
-const WIX_DOMAIN = "https://www.peopleoftheworld.net";
 
-async function fetchLeaderboardFromWix(mode = "short") {
-  try {
-    const response = await fetch(\`\${WIX_DOMAIN}/_functions/decisionGame/leaderboard?mode=\${mode}\`);
-    const result = await response.json();
-    if (result.results && Array.isArray(result.results)) {
-      stats.leaderboard[mode] = result.results.map((entry) => ({
-        initials: entry.initials,
-        correct: entry.correct,
-        questions: entry.questions,
-        totalTime: entry.totalTime,
-        avgReaction: entry.avgReaction,
-        incorrect: entry.questions - entry.correct,
-        date: entry.date || "",
-      }));
-      if (mode === leaderboardViewMode) renderLeaderboard(mode);
-    }
-  } catch (err) {
-    console.error("Failed to load leaderboard from server:", err);
-  }
-}
 
+
+
+// Ensure leaderboard loads on page startup
 document.addEventListener("DOMContentLoaded", () => {
-  ["short", "long", "infinite"].forEach((mode) => fetchLeaderboardFromWix(mode));
+  loadLeaderboard(currentMode || "short");
 });
 </script>
 
