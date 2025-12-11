@@ -1708,5 +1708,70 @@ function loadLeaderboard(mode) {
 document.addEventListener("DOMContentLoaded", () => {
   loadLeaderboard("short");
 });
-</script></body>
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const initialsInput = document.getElementById("initialsInput");
+  const initialsLabel = document.getElementById("initialsLabel");
+  const startBtn = document.getElementById("startBtn");
+
+  function validateInitials() {
+    const val = initialsInput.value.trim();
+    return val.length > 0;
+  }
+
+  function flashInitialsWarning() {
+    initialsInput.style.border = "2px solid red";
+    initialsLabel.style.color = "red";
+  }
+
+  function clearInitialsWarning() {
+    initialsInput.style.border = "1px solid black";
+    initialsLabel.style.color = "black";
+  }
+
+  initialsInput.addEventListener("input", function() {
+    if (validateInitials()) {
+      clearInitialsWarning();
+      startBtn.disabled = false;
+    } else {
+      flashInitialsWarning();
+      startBtn.disabled = true;
+    }
+  });
+
+  // Startup state
+  flashInitialsWarning();
+  startBtn.disabled = true;
+
+  // Modify start logic
+  const origStart = window.startGame;
+  window.startGame = function() {
+    if (!validateInitials()) {
+      flashInitialsWarning();
+      return;
+    }
+    clearInitialsWarning();
+    localStorage.setItem("decisionGameInitials", initialsInput.value.trim().toUpperCase());
+    origStart();
+  };
+
+  // Prefill from localStorage if exists
+  const savedInitials = localStorage.getItem("decisionGameInitials");
+  if (savedInitials) {
+    initialsInput.value = savedInitials;
+    clearInitialsWarning();
+    startBtn.disabled = false;
+  }
+
+  // Fetch leaderboard on load
+  if (typeof loadLeaderboardFromServer === "function") {
+    setTimeout(() => {
+      const mode = document.getElementById("modeBtn").dataset.mode || "short";
+      loadLeaderboardFromServer(mode);
+    }, 300);
+  }
+});
+</script>
+</body>
 </html>
