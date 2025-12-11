@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>People of the World – Decision Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
+<meta charset="utf-8"/>
+<title>People of the World – Decision Game</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<style>
     :root {
       --pow-bg: #f4f5fb;
       --pow-accent: #1c8fa9;
@@ -478,174 +479,161 @@
 </head>
 <body>
 <div id="pow-decision-game">
-  <div class="pow-header">
-    <div class="pow-header-title">Test and Improve Your Decision Making</div>
-    <div class="pow-mode-buttons">
-      <button id="modeToggleButton" class="pow-ghost">Mode: Short (10)</button>
-      <button id="startStopButton" class="pow-primary">Start</button>
-    </div>
-  </div>
-
-  <div id="orientationWarning" class="pow-warning">
+<div class="pow-header">
+<div class="pow-header-title">Test and Improve Your Decision Making</div>
+<div class="pow-mode-buttons">
+<button class="pow-ghost" id="modeToggleButton">Mode: Short (10)</button>
+<button class="pow-primary" id="startStopButton">Start</button>
+</div>
+</div>
+<div class="pow-warning" id="orientationWarning">
     For best experience on mobile, rotate your device to landscape.
   </div>
-
-  <!-- PLAY AREA: picture (left) – relation (middle) – word (right) -->
-  <div class="pow-play-area">
-    <!-- Picture LEFT -->
-    <div class="pow-card">
-      <div class="pow-image-wrapper">
-        <img id="pictureDisplay" alt="Decision picture" />
-      </div>
-    </div>
-
-    <!-- Relation MIDDLE -->
-    <div class="pow-card pow-relation-card">
-      <div class="pow-relation-label" id="relationLabel">is</div>
-    </div>
-
-    <!-- Word RIGHT -->
-    <div class="pow-card">
-      <div class="pow-word" id="wordDisplay">Press Start</div>
-    </div>
-  </div>
-
-  <div class="pow-actions">
-    <button id="falseButton" class="false">False</button>
-    <button id="trueButton" class="true">True</button>
-  </div>
-
-  <div class="pow-status-bar">
-    <div class="pow-status-item">
-      <div class="pow-label">Mode</div>
-      <div class="pow-value" id="statusMode">Short (10)</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Question</div>
-      <div class="pow-value" id="statusQuestion">0 / 10</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Session Time</div>
-      <div class="pow-value" id="statusTotalTime">0.00s</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Avg Reaction</div>
-      <div class="pow-value" id="statusAvgTime">0.00s</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Correct</div>
-      <div class="pow-value" id="statusCorrect">0</div>
-    </div>
-    <div class="pow-status-item">
-      <div class="pow-label">Incorrect</div>
-      <div class="pow-value" id="statusIncorrect">0</div>
-    </div>
-  </div>
-
-  <div class="pow-helper-text" id="helperText">
+<!-- PLAY AREA: picture (left) – relation (middle) – word (right) -->
+<div class="pow-play-area">
+<!-- Picture LEFT -->
+<div class="pow-card">
+<div class="pow-image-wrapper">
+<img alt="Decision picture" id="pictureDisplay"/>
+</div>
+</div>
+<!-- Relation MIDDLE -->
+<div class="pow-card pow-relation-card">
+<div class="pow-relation-label" id="relationLabel">is</div>
+</div>
+<!-- Word RIGHT -->
+<div class="pow-card">
+<div class="pow-word" id="wordDisplay">Press Start</div>
+</div>
+</div>
+<div class="pow-actions">
+<button class="false" id="falseButton">False</button>
+<button class="true" id="trueButton">True</button>
+</div>
+<div class="pow-status-bar">
+<div class="pow-status-item">
+<div class="pow-label">Mode</div>
+<div class="pow-value" id="statusMode">Short (10)</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Question</div>
+<div class="pow-value" id="statusQuestion">0 / 10</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Session Time</div>
+<div class="pow-value" id="statusTotalTime">0.00s</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Avg Reaction</div>
+<div class="pow-value" id="statusAvgTime">0.00s</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Correct</div>
+<div class="pow-value" id="statusCorrect">0</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Incorrect</div>
+<div class="pow-value" id="statusIncorrect">0</div>
+</div>
+</div>
+<div class="pow-helper-text" id="helperText">
     Tap <strong>Mode</strong> to switch between Practice / Short / Long / Infinite,
-    then press <strong>Start</strong>.<br />
+    then press <strong>Start</strong>.<br/>
     You see a <strong>picture on the left</strong>, a middle box that says
-    <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br />
-    Answer <strong>True</strong> if that full sentence is correct.<br />
+    <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br/>
+    Answer <strong>True</strong> if that full sentence is correct.<br/>
     On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
   </div>
-
-  <div class="pow-summary" id="summaryPanel" style="display: none;">
-    <div class="pow-summary-title">Run Summary</div>
-    <div class="pow-summary-row">
-      <span>Mode</span>
-      <span id="summaryMode"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Questions</span>
-      <span id="summaryQuestions"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Correct</span>
-      <span id="summaryCorrect"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Incorrect</span>
-      <span id="summaryIncorrect"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Total time</span>
-      <span id="summaryTotalTime"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Average reaction</span>
-      <span id="summaryAvgTime"></span>
-    </div>
-    <div class="pow-summary-row">
-      <span>Your best (this mode)</span>
-      <span id="summaryBest"></span>
-    </div>
-    <div class="pow-message" id="summaryMessage"></div>
-  </div>
-
-  <div class="pow-leaderboard-section pow-leaderboard">
-    <div class="pow-leaderboard-header">
-      <div>
-        <div class="pow-leaderboard-title">
-          Leaderboard <span id="leaderboardModeLabel" class="pow-tag">Short</span>
-        </div>
-        <div class="pow-message" id="leaderboardRankingInfo">
+<div class="pow-summary" id="summaryPanel" style="display: none;">
+<div class="pow-summary-title">Run Summary</div>
+<div class="pow-summary-row">
+<span>Mode</span>
+<span id="summaryMode"></span>
+</div>
+<div class="pow-summary-row">
+<span>Questions</span>
+<span id="summaryQuestions"></span>
+</div>
+<div class="pow-summary-row">
+<span>Correct</span>
+<span id="summaryCorrect"></span>
+</div>
+<div class="pow-summary-row">
+<span>Incorrect</span>
+<span id="summaryIncorrect"></span>
+</div>
+<div class="pow-summary-row">
+<span>Total time</span>
+<span id="summaryTotalTime"></span>
+</div>
+<div class="pow-summary-row">
+<span>Average reaction</span>
+<span id="summaryAvgTime"></span>
+</div>
+<div class="pow-summary-row">
+<span>Your best (this mode)</span>
+<span id="summaryBest"></span>
+</div>
+<div class="pow-message" id="summaryMessage"></div>
+</div>
+<div class="pow-leaderboard-section pow-leaderboard">
+<div class="pow-leaderboard-header">
+<div>
+<div class="pow-leaderboard-title">
+          Leaderboard <span class="pow-tag" id="leaderboardModeLabel">Short</span>
+</div>
+<div class="pow-message" id="leaderboardRankingInfo">
           Ranked by fewest mistakes, then total time, then average reaction.
         </div>
-      </div>
-      <div>
-        <button id="leaderboardToggleButton" class="pow-primary">
+</div>
+<div>
+<button class="pow-primary" id="leaderboardToggleButton">
           View: Short
         </button>
-      </div>
-    </div>
-    <div class="pow-leaderboard-table-wrapper">
-      <table>
-        <thead>
-        <tr>
-          <th>#</th>
-          <th>Initials</th>
-          <th>Q</th>
-          <th>C</th>
-          <th>IC</th>
-          <th>Total (s)</th>
-          <th>Avg (s)</th>
-        </tr>
-        </thead>
-        <tbody id="leaderboardBody"></tbody>
-      </table>
-    </div>
-  </div>
 </div>
-
+</div>
+<div class="pow-leaderboard-table-wrapper">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Initials</th>
+<th>Q</th>
+<th>C</th>
+<th>IC</th>
+<th>Total (s)</th>
+<th>Avg (s)</th>
+</tr>
+</thead>
+<tbody id="leaderboardBody"></tbody>
+</table>
+</div>
+</div>
+</div>
 <!-- Instructions modal -->
-<div id="instructionsModal" class="pow-modal-backdrop" style="display:flex;">
-  <div class="pow-modal">
-    <div class="pow-modal-title">Welcome to the POW Decision Game</div>
-    <div class="pow-modal-sub">
+<div class="pow-modal-backdrop" id="instructionsModal" style="display:flex;">
+<div class="pow-modal">
+<div class="pow-modal-title">Welcome to the POW Decision Game</div>
+<div class="pow-modal-sub">
       Train your moment-to-moment decision making with fast, honest feedback.
     </div>
-
-    <div class="pow-modal-section-title">How it works</div>
-    <div class="pow-modal-text">
+<div class="pow-modal-section-title">How it works</div>
+<div class="pow-modal-text">
       You see a <strong>picture on the left</strong>, a middle box that says
       <strong>“is”</strong> or <strong style="color:#c0392b;">“is not”</strong>,
       and a <strong>word on the right</strong>.
     </div>
-    <div class="pow-modal-text">
+<div class="pow-modal-text">
       Your job is to decide if the full sentence is <strong>true or false</strong>.
     </div>
-
-    <div class="pow-modal-section-title">Controls</div>
-    <div class="pow-modal-text">
+<div class="pow-modal-section-title">Controls</div>
+<div class="pow-modal-text">
       • Tap / click the <strong>True</strong> or <strong>False</strong> buttons.<br/>
       • On desktop you can also use:
       <strong>Left Arrow → False</strong>, <strong>Right Arrow → True</strong>.
     </div>
-
-    <div class="pow-modal-section-title">Modes</div>
-    <div class="pow-modal-text">
+<div class="pow-modal-section-title">Modes</div>
+<div class="pow-modal-text">
       • <strong>Practice</strong>: Infinite questions, just train. Time and average reaction are shown, but not ranked.<br/>
       • <strong>Short</strong>: 10 questions, recorded and ranked locally.<br/>
       • <strong>Long</strong>: 20 questions, recorded and ranked separately.<br/>
@@ -653,26 +641,23 @@
       The allowed time per question starts at <strong>1.0s</strong> and gets
       <strong>0.1s shorter every 50 correct answers</strong>, down to a minimum of <strong>0.3s</strong>.
     </div>
-
-    <div class="pow-modal-section-title">Scoring & sounds</div>
-    <div class="pow-modal-text">
+<div class="pow-modal-section-title">Scoring &amp; sounds</div>
+<div class="pow-modal-text">
       • You get a <strong>green ding</strong> for a correct answer.<br/>
       • A <strong>low buzzer</strong> means the answer (or timeout) was wrong.<br/>
       • A <strong>start bell</strong> plays after the 3-2-1 countdown.<br/>
       • A <strong>finish bell</strong> plays at the end of each run.
     </div>
-    <div class="pow-modal-text">
+<div class="pow-modal-text">
       Locally, the leaderboard keeps only your <strong>best score per mode</strong>:
       for Short/Long it ranks by fewest mistakes, then total time, then average reaction.
       For Infinite it ranks by most correct, then average reaction, then total time.
     </div>
-
-    <div class="pow-modal-footer">
-      <button id="instructionsCloseBtn" class="pow-primary">Got it</button>
-    </div>
-  </div>
+<div class="pow-modal-footer">
+<button class="pow-primary" id="instructionsCloseBtn">Got it</button>
 </div>
-
+</div>
+</div>
 <script>
 (function () {
   const ITEMS = [
@@ -1672,7 +1657,6 @@
   handleOrientationWarning();
 })();
 </script>
-
 <script>
 const API_BASE = "https://peopleoftheworld.net/_functions/decisionGame";
 
@@ -1701,8 +1685,6 @@ async function fetchLeaderboardFromWix(mode) {
   }
 }
 </script>
-
-
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof fetchLeaderboardFromWix === "function") {
@@ -1714,18 +1696,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 </script>
-
-
 <script>
 
 
 
 
-// Ensure leaderboard loads on page startup
-document.addEventListener("DOMContentLoaded", () => {
-  loadLeaderboard(currentMode || "short");
-});
-</script>
+function loadLeaderboard(mode) {
+  fetchLeaderboardFromWix(mode || "short");
+}
 
-</body>
+document.addEventListener("DOMContentLoaded", () => {
+  loadLeaderboard("short");
+});
+</script></body>
 </html>
