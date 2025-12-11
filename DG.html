@@ -483,6 +483,7 @@
 <div class="pow-header-title">Test and Improve Your Decision Making</div>
 <div class="pow-mode-buttons">
 <button class="pow-ghost" id="modeToggleButton">Mode: Short (10)</button>
+<button class="pow-ghost" id="newPlayerButton">New Player</button>
 <button class="pow-primary" id="startStopButton">Start</button>
 </div>
 </div>
@@ -602,7 +603,7 @@
 <th>C</th>
 <th>IC</th>
 <th>Total (s)</th>
-<th>Avg (s)</th>
+<th>Avg (s)</th><th>Date</th>
 </tr>
 </thead>
 <tbody id="leaderboardBody"></tbody>
@@ -1363,6 +1364,16 @@
 
     saveStats();
     renderLeaderboard(leaderboardViewMode);
+    // Save best score to Wix backend
+    saveScoreToWix({
+      initials: normalizedInitials,
+      mode: modeKey,
+      correct: run.correct,
+      questions: run.questions,
+      mistakes: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction
+    });
     const best = stats.runs[modeKey].bestRun;
     showSummary(run, best, isPersonalBest, leaderboardMessage);
     playFinishBell();
@@ -1423,48 +1434,53 @@
     el.summaryPanel.style.display = "block";
   }
 
-  function renderLeaderboard(modeKey) {
-    leaderboardViewMode = modeKey;
-    const list = stats.leaderboard[modeKey] || [];
-    el.leaderboardBody.innerHTML = "";
+  
+function renderLeaderboard(modeKey) {
+  leaderboardViewMode = modeKey;
+  const list = stats.leaderboard[modeKey] || [];
+  el.leaderboardBody.innerHTML = "";
 
-    if (modeKey === "short") {
-      el.leaderboardModeLabel.textContent = "Short";
-      el.leaderboardToggleButton.textContent = "View: Short";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by fewest mistakes, then total time, then average reaction.";
-    } else if (modeKey === "long") {
-      el.leaderboardModeLabel.textContent = "Long";
-      el.leaderboardToggleButton.textContent = "View: Long";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by fewest mistakes, then total time, then average reaction.";
-    } else {
-      el.leaderboardModeLabel.textContent = "Infinite";
-      el.leaderboardToggleButton.textContent = "View: Infinite";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by most correct, then average reaction, then total time.";
+  if (modeKey === "short") {
+    el.leaderboardModeLabel.textContent = "Short";
+    el.leaderboardToggleButton.textContent = "View: Short";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else if (modeKey === "long") {
+    el.leaderboardModeLabel.textContent = "Long";
+    el.leaderboardToggleButton.textContent = "View: Long";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else {
+    el.leaderboardModeLabel.textContent = "Infinite";
+    el.leaderboardToggleButton.textContent = "View: Infinite";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by most correct, then average reaction, then total time.";
+  }
+
+  list.forEach((entry, index) => {
+    const tr = document.createElement("tr");
+    const rank = index + 1;
+
+    function cell(text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      return td;
     }
 
-    list.forEach((entry, index) => {
-      const tr = document.createElement("tr");
-      const rank = index + 1;
+    tr.appendChild(cell(rank));
+    tr.appendChild(cell(entry.initials || "???"));
+    tr.appendChild(cell(entry.questions));
+    tr.appendChild(cell(entry.correct));
+    tr.appendChild(cell(entry.mistakes || entry.incorrect || 0));
+    tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
+    tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+    const date = entry.date ? new Date(entry.date).toLocaleDateString() : "";
+    tr.appendChild(cell(date));
 
-      function cell(text) {
-        const td = document.createElement("td");
-        td.textContent = text;
-        return td;
-      }
-
-      tr.appendChild(cell(rank));
-      tr.appendChild(cell(entry.initials || "???"));
-      tr.appendChild(cell(entry.questions));
-      tr.appendChild(cell(entry.correct));
-      tr.appendChild(cell(entry.incorrect));
-      tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
-      tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
-
-      el.leaderboardBody.appendChild(tr);
-    });
+    el.leaderboardBody.appendChild(tr);
+  });
+}
+);
   }
 
   function toggleLeaderboardMode() {
@@ -1650,6 +1666,13 @@
     el.instructionsModal.style.display = "none";
   });
 
+  
+  document.getElementById("newPlayerButton").addEventListener("click", function () {
+    stats.playerInitials = "";
+    saveStats();
+    alert("Initials cleared. You will be asked for new initials next time you play.");
+  });
+
   // ---- Init ----
   applyModeUI();
   resetState();
@@ -1685,17 +1708,7 @@ async function fetchLeaderboardFromWix(mode) {
   }
 }
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  if (typeof fetchLeaderboardFromWix === "function") {
-    const currentMode = typeof getCurrentMode === "function" ? getCurrentMode() : "short";
-    const data = await fetchLeaderboardFromWix(currentMode);
-    if (typeof renderLeaderboard === "function") {
-      renderLeaderboard(data);
-    }
-  }
-});
-</script>
+
 <script>
 
 
@@ -1705,8 +1718,18 @@ function loadLeaderboard(mode) {
   fetchLeaderboardFromWix(mode || "short");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadLeaderboard("short");
-});
+
 </script></body>
 </html>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const mode = "short";
+  const data = await fetchLeaderboardFromWix(mode);
+  if (data && data.length) {
+    stats.leaderboard[mode] = data;
+  }
+  renderLeaderboard(mode);
+});
+</script>
