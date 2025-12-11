@@ -1364,6 +1364,16 @@
 
     saveStats();
     renderLeaderboard(leaderboardViewMode);
+    // Save best score to Wix backend
+    saveScoreToWix({
+      initials: normalizedInitials,
+      mode: modeKey,
+      correct: run.correct,
+      questions: run.questions,
+      mistakes: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction
+    });
     const best = stats.runs[modeKey].bestRun;
     showSummary(run, best, isPersonalBest, leaderboardMessage);
     playFinishBell();
