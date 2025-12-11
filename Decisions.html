@@ -660,7 +660,7 @@
 </div>
 </div>
 <script>
-(function() {
+(function () {
   const ITEMS = [
     { key: "ball", label: "Ball", url: "https://static.wixstatic.com/media/eaef6d_7f2b9555f08e4407bcf27857bf332d3c~mv2.png" },
     { key: "umbrella", label: "Umbrella", url: "https://static.wixstatic.com/media/eaef6d_a783bbb23e2f4960a84c5946322bd1d1~mv2.png" },
@@ -833,7 +833,9 @@
     // For each 50 correct answers, drop 0.1s, down to 0.3s
     const steps = Math.floor(correctCount / 50);
     const candidate = INFINITE_BASE_TIME_LIMIT - 0.1 * steps;
-    infiniteTimeLimit = candidate < INFINITE_MIN_TIME_LIMIT ? INFINITE_MIN_TIME_LIMIT : candidate;
+    infiniteTimeLimit = candidate < INFINITE_MIN_TIME_LIMIT
+      ? INFINITE_MIN_TIME_LIMIT
+      : candidate;
   }
 
   function loadStats() {
@@ -863,9 +865,12 @@
           infinite: { firstRun: null, bestRun: null, lastRun: null }
         };
       } else {
-        if (!parsed.runs.short) parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
-        if (!parsed.runs.long) parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
-        if (!parsed.runs.infinite) parsed.runs.infinite = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.short)
+          parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.long)
+          parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.infinite)
+          parsed.runs.infinite = { firstRun: null, bestRun: null, lastRun: null };
       }
 
       if (!parsed.leaderboard) {
@@ -999,174 +1004,730 @@
     } else if (mode === "long") {
       targetQuestions = 20;
     } else {
+      // infinite
       targetQuestions = Infinity;
     }
+    resetState();
     applyModeUI();
   }
 
-  // --- UI wiring & minimal initialization (only essential parts included) ---
-  // Add the modal close behavior so the Got it button hides the modal.
-  if (el.instructionsCloseBtn) {
-    el.instructionsCloseBtn.addEventListener('click', function() {
-      if (el.instructionsModal) {
-        el.instructionsModal.style.display = 'none';
-      }
-      // After closing instructions, focus the Start button for convenience
-      if (el.startStopButton) el.startStopButton.focus();
-    });
-  }
-
-  // Basic mode toggle for convenience
-  if (el.modeToggleButton) {
-    el.modeToggleButton.addEventListener('click', function() {
-      const modes = ['practice', 'short', 'long', 'infinite'];
-      const idx = modes.indexOf(currentMode);
-      const next = modes[(idx + 1) % modes.length];
-      setMode(next);
-    });
-  }
-
-  // Wire start/stop so you can at least start a run or reset state (minimal)
-  if (el.startStopButton) {
-    el.startStopButton.addEventListener('click', function() {
-      if (runActive) {
-        stopRun(false);
-      } else {
-        startRun();
-      }
-    });
-  }
-
-  // Basic true/false wiring to allow playing once script runs
-  if (el.trueButton) {
-    el.trueButton.addEventListener('click', function() {
-      if (currentQuestionActive) answerQuestion(true);
-    });
-  }
-  if (el.falseButton) {
-    el.falseButton.addEventListener('click', function() {
-      if (currentQuestionActive) answerQuestion(false);
-    });
-  }
-
-  // Keyboard arrows
-  window.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowLeft') {
-      if (currentQuestionActive) answerQuestion(false);
-    } else if (e.key === 'ArrowRight') {
-      if (currentQuestionActive) answerQuestion(true);
-    }
-  });
-
-  // Stubs for functions referenced above but not included in this snippet.
-  // The goal here is to ensure the script parses and the modal button works.
-  // If your original file contains fuller implementations, keep them; otherwise
-  // these simple stubs prevent runtime errors until you reintroduce the full logic.
-  function startRun() {
-    // minimal start behavior: set flags and swap button label
-    runActive = true;
-    currentQuestionActive = false;
-    questionCount = 0;
-    correctCount = 0;
-    incorrectCount = 0;
-    sessionStartTime = Date.now();
-    el.startStopButton.textContent = "Stop";
-    el.statusQuestion.textContent = "0 / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
-    // prepare first question (simplified)
-    nextQuestion();
-  }
-
-  function stopRun(force) {
-    // minimal stop behavior: reset flags and show summary
-    runActive = false;
-    currentQuestionActive = false;
-    clearCountdownTimers();
-    clearQuestionTimeout();
-    el.startStopButton.textContent = "Start";
-    // show summary
-    el.summaryPanel.style.display = "block";
-    el.summaryMode.textContent = el.statusMode.textContent;
-    el.summaryQuestions.textContent = questionCount;
-    el.summaryCorrect.textContent = correctCount;
-    el.summaryIncorrect.textContent = incorrectCount;
-    if (sessionStartTime) {
-      const totalSec = (Date.now() - sessionStartTime) / 1000;
-      el.summaryTotalTime.textContent = formatSeconds(totalSec);
-      el.summaryAvgTime.textContent = formatSeconds(totalReactionTime / Math.max(1, questionCount));
+  function cycleMode() {
+    if (currentMode === "practice") {
+      setMode("short");
+    } else if (currentMode === "short") {
+      setMode("long");
+    } else if (currentMode === "long") {
+      setMode("infinite");
     } else {
-      el.summaryTotalTime.textContent = "0.00s";
-      el.summaryAvgTime.textContent = "0.00s";
+      setMode("practice");
     }
+  }
+
+  function prepareSequencesForRun() {
+    // Pre-set sequences only for short/long (fixed-length), not for practice/infinite
+    if (currentMode === "practice" || currentMode === "infinite") {
+      wordOrder = [];
+      pictureOrder = [];
+      return;
+    }
+    const indices = [];
+    for (let i = 0; i < ITEMS.length; i++) indices.push(i);
+
+    const wordIndices = indices.slice();
+    shuffleArray(wordIndices);
+    wordOrder = wordIndices.slice(0, targetQuestions);
+
+    const pictureIndices = indices.slice();
+    shuffleArray(pictureIndices);
+    pictureOrder = pictureIndices.slice(0, targetQuestions);
+  }
+
+  function updateTimer() {
+    if (!sessionStartTime) return;
+    const now = performance.now();
+    const totalSec = (now - sessionStartTime) / 1000;
+    el.statusTotalTime.textContent = formatSeconds(totalSec);
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+    el.statusAvgTime.textContent = formatSeconds(avgReaction);
+  }
+
+  function randomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  function chooseIsNot() {
+    let isNot;
+    if (lastIsNot === null) {
+      isNot = Math.random() < 0.5;
+      lastIsNot = isNot;
+      relationStreak = 1;
+    } else {
+      const randomVal = Math.random() < 0.5;
+      if (randomVal === lastIsNot && relationStreak >= 2) {
+        isNot = !lastIsNot;
+      } else {
+        isNot = randomVal;
+      }
+      if (isNot === lastIsNot) {
+        relationStreak++;
+      } else {
+        lastIsNot = isNot;
+        relationStreak = 1;
+      }
+    }
+    return isNot;
   }
 
   function nextQuestion() {
-    // simplified question cycle: pick random item and show word/picture/relation
     if (!runActive) return;
-    questionCount++;
-    el.statusQuestion.textContent = questionCount + " / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
-    const item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-    el.pictureDisplay.src = item.url;
-    el.pictureDisplay.alt = item.label;
-    // randomly choose true/false and relation label
-    const isNot = Math.random() < 0.5;
-    el.relationLabel.textContent = isNot ? "is not" : "is";
-    if (isNot) el.relationLabel.classList.add('pow-relation-not');
-    else el.relationLabel.classList.remove('pow-relation-not');
-    el.wordDisplay.textContent = item.label; // simplistic: show same label
-    // set correct answer randomly for demo (your full logic should compute this)
-    currentCorrectAnswer = Math.random() < 0.5;
+
+    // For fixed modes, stop if we've hit target
+    if (currentMode !== "practice" && currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
+      stopRun(false);
+      return;
+    }
+
+    clearQuestionTimeout();
+
+    let wordIndex;
+    let imageIndex;
+    let isNot;
+
+    if (currentMode === "practice" || currentMode === "infinite") {
+      if (ITEMS.length === 0) return;
+
+      // Word: never the same consecutively
+      if (ITEMS.length === 1) {
+        wordIndex = 0;
+      } else {
+        do {
+          wordIndex = randomInt(ITEMS.length);
+        } while (wordIndex === lastWordIndex);
+      }
+
+      // Picture: never the same consecutively
+      if (ITEMS.length === 1) {
+        imageIndex = 0;
+      } else {
+        do {
+          imageIndex = randomInt(ITEMS.length);
+        } while (imageIndex === lastPictureIndex);
+      }
+
+      isNot = chooseIsNot();
+    } else {
+      const idx = questionCount;
+      wordIndex = wordOrder[idx];
+      imageIndex = pictureOrder[idx];
+      isNot = chooseIsNot();
+    }
+
+    const wordItem = ITEMS[wordIndex];
+    const imageItem = ITEMS[imageIndex];
+
+    el.wordDisplay.textContent = wordItem.label;
+    el.pictureDisplay.src = imageItem.url || "";
+    el.pictureDisplay.alt = imageItem.label;
+
+    if (isNot) {
+      el.relationLabel.textContent = "is not";
+      el.relationLabel.classList.add("pow-relation-not");
+    } else {
+      el.relationLabel.textContent = "is";
+      el.relationLabel.classList.remove("pow-relation-not");
+    }
+
+    const match = wordIndex === imageIndex;
+    currentCorrectAnswer = isNot ? !match : match;
+
+    lastWordIndex = wordIndex;
+    lastPictureIndex = imageIndex;
+
+    lastQuestionTime = performance.now();
     currentQuestionActive = true;
-    lastQuestionTime = Date.now();
-    // if infinite mode, set timeout based on infiniteTimeLimit
-    if (currentMode === 'infinite') {
+
+    const totalQ = isFinite(targetQuestions) ? targetQuestions : "∞";
+    el.statusQuestion.textContent = (questionCount + 1) + " / " + totalQ;
+
+    if (currentMode === "infinite") {
       updateInfiniteTimeLimit();
-      clearQuestionTimeout();
-      questionTimeoutId = setTimeout(function() {
-        // timeout considered incorrect
-        currentQuestionActive = false;
-        incorrectCount++;
-        el.statusIncorrect.textContent = String(incorrectCount);
-        playWrongBuzz();
-        if (currentMode === 'infinite') stopRun(false);
-      }, infiniteTimeLimit * 1000);
+      questionTimeoutId = setTimeout(handleTimeout, infiniteTimeLimit * 1000);
     }
   }
 
-  function answerQuestion(choice) {
-    if (!currentQuestionActive) return;
-    clearQuestionTimeout();
+  function handleTimeout() {
+    // Only used in infinite mode
+    if (!runActive || !currentQuestionActive || currentMode !== "infinite") return;
     currentQuestionActive = false;
-    const now = Date.now();
-    const reaction = (now - lastQuestionTime) / 1000;
-    totalReactionTime += reaction;
-    if (choice === currentCorrectAnswer) {
+    clearQuestionTimeout();
+
+    questionCount++;
+    incorrectCount++;
+    totalReactionTime += infiniteTimeLimit; // treat as full allotted time
+    el.statusCorrect.textContent = String(correctCount);
+    el.statusIncorrect.textContent = String(incorrectCount);
+
+    playWrongBuzz();
+    // Timeout ends infinite run
+    stopRun(false);
+  }
+
+  function handleAnswer(answerIsTrue) {
+    if (!runActive || !currentQuestionActive) return;
+
+    clearQuestionTimeout();
+
+    const now = performance.now();
+    const reactionSec = lastQuestionTime ? (now - lastQuestionTime) / 1000 : 0;
+    totalReactionTime += reactionSec;
+    questionCount++;
+
+    const isCorrect = answerIsTrue === currentCorrectAnswer;
+    if (isCorrect) {
       correctCount++;
-      el.statusCorrect.textContent = String(correctCount);
       playCorrectDing();
     } else {
       incorrectCount++;
-      el.statusIncorrect.textContent = String(incorrectCount);
       playWrongBuzz();
     }
-    el.statusAvgTime.textContent = formatSeconds(totalReactionTime / Math.max(1, correctCount + incorrectCount));
-    if (isFinite(targetQuestions) && questionCount >= targetQuestions) {
-      // run finished
+
+    el.statusCorrect.textContent = String(correctCount);
+    el.statusIncorrect.textContent = String(incorrectCount);
+
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
+      currentQuestionActive = false;
       stopRun(false);
-      playFinishBell();
-    } else if (currentMode === 'infinite' && incorrectCount > 0) {
+    } else if (currentMode === "infinite" && !isCorrect) {
+      // First mistake ends infinite run
+      currentQuestionActive = false;
       stopRun(false);
     } else {
-      // proceed to next question after a short delay
-      setTimeout(nextQuestion, 350);
+      nextQuestion();
     }
   }
 
-  // Initialize UI and display a random picture
-  resetState();
-  applyModeUI();
+  // Comparators --------------------------------
 
-  // If you want the modal to auto-hide for returning users, you can check stats or another flag here.
+  // Short/Long: fewest mistakes, then lowest totalTime, then lowest avgReaction
+  function compareShortLong(a, b) {
+    if (a.incorrect !== b.incorrect) return a.incorrect - b.incorrect;
+    if (a.totalTime !== b.totalTime) return a.totalTime - b.totalTime;
+    return a.avgReaction - b.avgReaction;
+  }
+
+  // Infinite: most correct, then lowest avgReaction, then lowest totalTime
+  function compareInfinite(a, b) {
+    if (a.correct !== b.correct) return b.correct - a.correct;
+    if (a.avgReaction !== b.avgReaction) return a.avgReaction - b.avgReaction;
+    return a.totalTime - b.totalTime;
+  }
+
+  function compareRunsByMode(mode, a, b) {
+    if (mode === "infinite") return compareInfinite(a, b);
+    return compareShortLong(a, b);
+  }
+
+  function isBetterRun(mode, candidate, baseline) {
+    if (!baseline) return true;
+    return compareRunsByMode(mode, candidate, baseline) < 0;
+  }
+
+  function ensureInitials() {
+    const prev = (stats.playerInitials || "").trim().toUpperCase();
+    const hasValidPrev = prev && prev !== "???";
+    if (hasValidPrev) return prev;
+
+    let initials = "";
+    while (true) {
+      const input = prompt("Enter your initials (1–4 characters):", "") || "";
+      initials = input.trim().toUpperCase();
+
+      if (!initials) {
+        if (!confirm("No initials entered. Try again?")) break;
+      } else {
+        if (initials.length > 4) initials = initials.substring(0, 4);
+        break;
+      }
+    }
+
+    if (initials) {
+      stats.playerInitials = initials;
+      saveStats();
+      return initials;
+    }
+
+    if (hasValidPrev) return prev;
+    return "???";
+  }
+
+  function finalizeRun() {
+    if (!currentMode || currentMode === "practice") return;
+
+    // For short/long we only record fully completed runs
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        isFinite(targetQuestions) &&
+        questionCount < targetQuestions) {
+      return;
+    }
+
+    if (questionCount <= 0) return;
+
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    const run = {
+      mode: currentMode,
+      questions: questionCount,
+      correct: correctCount,
+      incorrect: incorrectCount,
+      totalTime: totalTimeSec,
+      avgReaction: avgReaction,
+      timestamp: Date.now()
+    };
+
+    const modeKey = currentMode;
+    const runBucket = stats.runs[modeKey];
+
+    if (!runBucket.firstRun) {
+      runBucket.firstRun = run;
+    }
+    runBucket.lastRun = run;
+
+    let isPersonalBest = false;
+    if (!runBucket.bestRun || isBetterRun(modeKey, run, runBucket.bestRun)) {
+      runBucket.bestRun = run;
+      isPersonalBest = true;
+    }
+
+    const initials = ensureInitials();
+    const normalizedInitials = (initials || "???").toUpperCase();
+    let leaderboard = stats.leaderboard[modeKey] || [];
+    let leaderboardMessage = "";
+    let qualifies = false;
+
+    const entry = {
+      initials: normalizedInitials,
+      questions: run.questions,
+      correct: run.correct,
+      incorrect: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction,
+      timestamp: run.timestamp
+    };
+
+    const existingIndex = leaderboard.findIndex(
+      e => (e.initials || "???").toUpperCase() === normalizedInitials
+    );
+
+    const compareFn = (a, b) => compareRunsByMode(modeKey, a, b);
+
+    if (existingIndex >= 0) {
+      const existing = leaderboard[existingIndex];
+      if (compareFn(run, existing) < 0) {
+        leaderboard[existingIndex] = entry;
+        qualifies = true;
+        leaderboardMessage = "You improved your best score for this mode.";
+      } else {
+        qualifies = false;
+        leaderboardMessage =
+          "This run did not beat your best score for this mode.";
+      }
+    } else {
+      if (leaderboard.length < 100) {
+        leaderboard.push(entry);
+        qualifies = true;
+        leaderboardMessage = "This run made it into the top 100 for this mode.";
+      } else {
+        const worst = leaderboard[leaderboard.length - 1];
+        if (compareFn(run, worst) < 0) {
+          leaderboard.push(entry);
+          qualifies = true;
+          leaderboardMessage =
+            "This run made it into the top 100 for this mode.";
+        } else {
+          qualifies = false;
+          leaderboardMessage =
+            "This run did not reach the top 100, but it is still recorded as your current run.";
+        }
+      }
+    }
+
+    if (qualifies) {
+      leaderboard.sort(compareFn);
+      leaderboard = leaderboard.slice(0, 100);
+      stats.leaderboard[modeKey] = leaderboard;
+    }
+
+    saveStats();
+    renderLeaderboard(leaderboardViewMode);
+    // Save best score to Wix backend
+    saveScoreToWix({
+      initials: normalizedInitials,
+      mode: modeKey,
+      correct: run.correct,
+      questions: run.questions,
+      mistakes: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction
+    });
+    const best = stats.runs[modeKey].bestRun;
+    showSummary(run, best, isPersonalBest, leaderboardMessage);
+    playFinishBell();
+  }
+
+  function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
+    let modeLabel;
+    if (run.mode === "practice") modeLabel = "Practice";
+    else if (run.mode === "short") modeLabel = "Short (10)";
+    else if (run.mode === "long") modeLabel = "Long (20)";
+    else modeLabel = "Infinite";
+
+    el.summaryMode.textContent = modeLabel;
+
+    el.summaryQuestions.textContent = run.questions;
+    el.summaryCorrect.textContent = run.correct;
+    el.summaryIncorrect.textContent = run.incorrect;
+    el.summaryTotalTime.textContent = formatSeconds(run.totalTime);
+    el.summaryAvgTime.textContent = formatSeconds(run.avgReaction);
+
+    if (run.mode === "practice") {
+      el.summaryBest.textContent = "Not tracked for practice mode.";
+    } else if (bestRun) {
+      if (run.mode === "infinite") {
+        el.summaryBest.textContent =
+          "Correct: " +
+          bestRun.correct +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction) +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime);
+      } else {
+        el.summaryBest.textContent =
+          "IC:" +
+          bestRun.incorrect +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime) +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction);
+      }
+    } else {
+      el.summaryBest.textContent = "—";
+    }
+
+    let msg = leaderboardMessage || "";
+    if (run.mode !== "practice") {
+      if (isPersonalBest) {
+        msg += (msg ? " " : "") + "Personal best for this mode!";
+      } else if (!msg) {
+        msg = "Keep going to beat your best score.";
+      }
+    } else if (!msg) {
+      msg = "Practice session complete.";
+    }
+
+    el.summaryMessage.textContent = msg;
+    el.summaryMessage.classList.toggle("highlight", isPersonalBest);
+    el.summaryPanel.style.display = "block";
+  }
+
+  
+function renderLeaderboard(modeKey) {
+  leaderboardViewMode = modeKey;
+  const list = stats.leaderboard[modeKey] || [];
+  el.leaderboardBody.innerHTML = "";
+
+  if (modeKey === "short") {
+    el.leaderboardModeLabel.textContent = "Short";
+    el.leaderboardToggleButton.textContent = "View: Short";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else if (modeKey === "long") {
+    el.leaderboardModeLabel.textContent = "Long";
+    el.leaderboardToggleButton.textContent = "View: Long";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else {
+    el.leaderboardModeLabel.textContent = "Infinite";
+    el.leaderboardToggleButton.textContent = "View: Infinite";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by most correct, then average reaction, then total time.";
+  }
+
+  list.forEach((entry, index) => {
+    const tr = document.createElement("tr");
+    const rank = index + 1;
+
+    function cell(text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      return td;
+    }
+
+    tr.appendChild(cell(rank));
+    tr.appendChild(cell(entry.initials || "???"));
+    tr.appendChild(cell(entry.questions));
+    tr.appendChild(cell(entry.correct));
+    tr.appendChild(cell(entry.mistakes || entry.incorrect || 0));
+    tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
+    tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+    const date = entry.date ? new Date(entry.date).toLocaleDateString() : "";
+    tr.appendChild(cell(date));
+
+    el.leaderboardBody.appendChild(tr);
+  });
+}
+
+  function toggleLeaderboardMode() {
+    if (leaderboardViewMode === "short") {
+      renderLeaderboard("long");
+    } else if (leaderboardViewMode === "long") {
+      renderLeaderboard("infinite");
+    } else {
+      renderLeaderboard("short");
+    }
+  }
+
+  function handleOrientationWarning() {
+    const isMobile =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.innerWidth < 900;
+    const portrait = window.innerHeight > window.innerWidth;
+    el.orientationWarning.style.display =
+      isMobile && portrait ? "block" : "none";
+  }
+
+  function startCountdownThenRun() {
+    if (countdownActive || runActive) return;
+    countdownActive = true;
+    el.summaryPanel.style.display = "none";
+
+    el.wordDisplay.textContent = "Get ready...";
+    el.relationLabel.textContent = "";
+    el.relationLabel.classList.remove("pow-relation-not");
+
+    el.falseButton.disabled = true;
+    el.trueButton.disabled = true;
+
+    el.startStopButton.textContent = "Stop";
+
+    const steps = [3, 2, 1];
+    let delay = 500;
+
+    steps.forEach((num, idx) => {
+      const t = setTimeout(() => {
+        el.wordDisplay.textContent = String(num);
+        playCountdownBeep(idx);
+      }, delay);
+      countdownTimers.push(t);
+      delay += 1000;
+    });
+
+    const finalTimeout = setTimeout(() => {
+      countdownActive = false;
+      playStartBell();
+      actuallyStartRun();
+    }, delay);
+    countdownTimers.push(finalTimeout);
+  }
+
+  function actuallyStartRun() {
+    if (runActive) return;
+    runActive = true;
+    el.falseButton.disabled = false;
+    el.trueButton.disabled = false;
+
+    el.startStopButton.textContent = "Stop";
+
+    sessionStartTime = performance.now();
+    timerInterval = setInterval(updateTimer, 50);
+    nextQuestion();
+  }
+
+  function stopRun(manual) {
+    if (!runActive && !countdownActive) return;
+
+    clearCountdownTimers();
+    countdownActive = false;
+    clearQuestionTimeout();
+
+    if (!runActive) {
+      resetState();
+      return;
+    }
+
+    runActive = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    currentQuestionActive = false;
+
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    el.startStopButton.textContent = "Start";
+
+    if (currentMode === "practice") {
+      showSummary(
+        {
+          mode: currentMode,
+          questions: questionCount,
+          correct: correctCount,
+          incorrect: incorrectCount,
+          totalTime: totalTimeSec,
+          avgReaction: avgReaction
+        },
+        null,
+        false,
+        manual ? "Practice session stopped." : "Practice session complete."
+      );
+      playFinishBell();
+    } else if (currentMode === "infinite") {
+      if (manual) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs.infinite?.bestRun || null,
+          false,
+          "Infinite run stopped manually. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
+    } else {
+      // short / long
+      if (questionCount < targetQuestions) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs[currentMode]?.bestRun || null,
+          false,
+          "Run stopped before completion. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
+    }
+  }
+
+  // ---- Event wiring ----
+
+  el.modeToggleButton.addEventListener("click", cycleMode);
+
+  el.startStopButton.addEventListener("click", function () {
+    if (!runActive && !countdownActive) {
+      resetState();
+      if (currentMode !== "practice" && currentMode !== "infinite") {
+        prepareSequencesForRun();
+      }
+      startCountdownThenRun();
+    } else {
+      stopRun(true);
+    }
+  });
+
+  el.falseButton.addEventListener("click", function () { handleAnswer(false); });
+  el.trueButton.addEventListener("click", function () { handleAnswer(true); });
+
+  window.addEventListener("keydown", function (e) {
+    if (!runActive || countdownActive) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      handleAnswer(false);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleAnswer(true);
+    }
+  });
+
+  el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
+  window.addEventListener("resize", handleOrientationWarning);
+
+  el.instructionsCloseBtn.addEventListener("click", function () {
+    el.instructionsModal.style.display = "none";
+  });
+
+  
+  document.getElementById("newPlayerButton").addEventListener("click", function () {
+    stats.playerInitials = "";
+    saveStats();
+    alert("Initials cleared. You will be asked for new initials next time you play.");
+  });
+
+  // ---- Init ----
+  applyModeUI();
+  resetState();
+  renderLeaderboard("short");
+  handleOrientationWarning();
 })();
 </script>
-</body>
+<script>
+const API_BASE = "https://peopleoftheworld.net/_functions/decisionGame";
+
+async function saveScoreToWix(score) {
+  try {
+    const response = await fetch(`${API_BASE}/saveScore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(score),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error("Save failed:", err);
+    return null;
+  }
+}
+
+async function fetchLeaderboardFromWix(mode) {
+  try {
+    const response = await fetch(`${API_BASE}/leaderboard?mode=${mode}`);
+    const data = await response.json();
+    return data.results || [];
+  } catch (err) {
+    console.error("Leaderboard fetch failed:", err);
+    return [];
+  }
+}
+</script>
+
+<script>
+
+
+
+
+function loadLeaderboard(mode) {
+  fetchLeaderboardFromWix(mode || "short");
+}
+
+
+</script></body>
 </html>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const mode = "short";
+  const data = await fetchLeaderboardFromWix(mode);
+  if (data && data.length) {
+    stats.leaderboard[mode] = data;
+  }
+  renderLeaderboard(mode);
+});
+</script>
