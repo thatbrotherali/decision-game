@@ -603,7 +603,7 @@
 <th>C</th>
 <th>IC</th>
 <th>Total (s)</th>
-<th>Avg (s)</th>
+<th>Avg (s)</th><th>Date</th>
 </tr>
 </thead>
 <tbody id="leaderboardBody"></tbody>
@@ -1434,48 +1434,53 @@
     el.summaryPanel.style.display = "block";
   }
 
-  function renderLeaderboard(modeKey) {
-    leaderboardViewMode = modeKey;
-    const list = stats.leaderboard[modeKey] || [];
-    el.leaderboardBody.innerHTML = "";
+  
+function renderLeaderboard(modeKey) {
+  leaderboardViewMode = modeKey;
+  const list = stats.leaderboard[modeKey] || [];
+  el.leaderboardBody.innerHTML = "";
 
-    if (modeKey === "short") {
-      el.leaderboardModeLabel.textContent = "Short";
-      el.leaderboardToggleButton.textContent = "View: Short";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by fewest mistakes, then total time, then average reaction.";
-    } else if (modeKey === "long") {
-      el.leaderboardModeLabel.textContent = "Long";
-      el.leaderboardToggleButton.textContent = "View: Long";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by fewest mistakes, then total time, then average reaction.";
-    } else {
-      el.leaderboardModeLabel.textContent = "Infinite";
-      el.leaderboardToggleButton.textContent = "View: Infinite";
-      el.leaderboardRankingInfo.textContent =
-        "Ranked by most correct, then average reaction, then total time.";
+  if (modeKey === "short") {
+    el.leaderboardModeLabel.textContent = "Short";
+    el.leaderboardToggleButton.textContent = "View: Short";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else if (modeKey === "long") {
+    el.leaderboardModeLabel.textContent = "Long";
+    el.leaderboardToggleButton.textContent = "View: Long";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by fewest mistakes, then total time, then average reaction.";
+  } else {
+    el.leaderboardModeLabel.textContent = "Infinite";
+    el.leaderboardToggleButton.textContent = "View: Infinite";
+    el.leaderboardRankingInfo.textContent =
+      "Ranked by most correct, then average reaction, then total time.";
+  }
+
+  list.forEach((entry, index) => {
+    const tr = document.createElement("tr");
+    const rank = index + 1;
+
+    function cell(text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      return td;
     }
 
-    list.forEach((entry, index) => {
-      const tr = document.createElement("tr");
-      const rank = index + 1;
+    tr.appendChild(cell(rank));
+    tr.appendChild(cell(entry.initials || "???"));
+    tr.appendChild(cell(entry.questions));
+    tr.appendChild(cell(entry.correct));
+    tr.appendChild(cell(entry.mistakes || entry.incorrect || 0));
+    tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
+    tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+    const date = entry.date ? new Date(entry.date).toLocaleDateString() : "";
+    tr.appendChild(cell(date));
 
-      function cell(text) {
-        const td = document.createElement("td");
-        td.textContent = text;
-        return td;
-      }
-
-      tr.appendChild(cell(rank));
-      tr.appendChild(cell(entry.initials || "???"));
-      tr.appendChild(cell(entry.questions));
-      tr.appendChild(cell(entry.correct));
-      tr.appendChild(cell(entry.incorrect));
-      tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
-      tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
-
-      el.leaderboardBody.appendChild(tr);
-    });
+    el.leaderboardBody.appendChild(tr);
+  });
+}
+);
   }
 
   function toggleLeaderboardMode() {
