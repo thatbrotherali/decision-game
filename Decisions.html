@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>People of the World – Decision Game</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<style>
+    :root {
+      --pow-bg: #f4f5fb;
+      --pow-accent: #1c8fa9;
+      --pow-accent-soft: #e0f3f7;
+      --pow-text: #222;
+      --pow-muted: #666;
+      --pow-card-bg: #ffffff;
+      --pow-danger: #c0392b;
+      --pow-success: #27ae60;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--pow-bg);
+      color: var(--pow-text);
+    }
+
+    #pow-decision-game {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .pow-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pow-header-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .pow-mode-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 6px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #e4e6f0;
+      color: var(--pow-text);
+      font-weight: 500;
+      transition: background 0.15s, transform 0.05s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #d5d7e5; }
+    button:active { transform: scale(0.97); }
+
+    button.pow-primary {
+      background: var(--pow-accent);
+      color: #fff;
+    }
+    button.pow-primary:hover { background: #147187; }
+
+    button.pow-ghost {
+      background: transparent;
+      border: 1px solid #cfd3e5;
+    }
+
+    button.pow-danger {
+      background: var(--pow-danger);
+      color: #fff;
+    }
+    button.pow-danger:hover { background: #962d22; }
+
+    .pow-status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 16px;
+      background: var(--pow-accent-soft);
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+
+    .pow-status-item {
+      min-width: 110px;
+    }
+
+    .pow-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--pow-muted);
+      margin-bottom: 2px;
+      /* hide labels from player */
+      display: none;
+    }
+
+    .pow-value { font-weight: 600; }
+
+    .pow-play-area {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      align-items: stretch;
+    }
+
+    .pow-card {
+      flex: 1;
+      background: var(--pow-card-bg);
+      border-radius: 20px;
+      padding: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .pow-word {
+      font-size: 2.1rem;
+      font-weight: 700;
+      text-align: center;
+      word-wrap: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pow-image-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 70%;
+      overflow: hidden;
+      border-radius: 16px;
+      background: #f8f8fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pow-image-wrapper img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .pow-relation-card {
+      flex: 0 0 140px; /* wider so "is not" fits comfortably */
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .pow-relation-label {
+      width: 100%;
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #333;
+      word-wrap: break-word;
+      white-space: normal;   /* allow "is not" to wrap to two lines if needed */
+      line-height: 1.1;
+    }
+
+    .pow-relation-not {
+      color: var(--pow-danger);
+    }
+
+    .pow-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .pow-actions button {
+      flex: 1;
+      padding: 12px 18px;
+      font-size: 1.1rem;
+    }
+
+    .pow-actions .false {
+      background: #f7d7d7;
+      color: #b03030;
+    }
+    .pow-actions .false:hover { background: #f1c0c0; }
+
+    .pow-actions .true {
+      background: #d5f3dd;
+      color: #227a3b;
+    }
+    .pow-actions .true:hover { background: #beeac9; }
+
+    .pow-helper-text {
+      font-size: 0.75rem;
+      color: var(--pow-muted);
+      margin-bottom: 8px;
+    }
+
+    .pow-summary {
+      background: var(--pow-card-bg);
+      border-radius: 16px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      font-size: 0.9rem;
+    }
+
+    .pow-summary-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .pow-summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .pow-summary-highlight {
+      color: var(--pow-success);
+      font-weight: 600;
+    }
+
+    .pow-leaderboard-section {
+      background: var(--pow-card-bg);
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      font-size: 0.85rem;
+    }
+
+    .pow-leaderboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pow-leaderboard-title { font-weight: 600; }
+
+    .pow-leaderboard-table-wrapper {
+      max-height: 280px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid #e0e2f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #f5f6ff;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid #f0f1f7;
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--pow-muted);
+      font-size: 0.75rem;
+    }
+
+    tbody tr:nth-child(odd) { background: #fafbff; }
+
+    .pow-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #e0f3f7;
+      color: #256773;
+    }
+
+    .pow-message {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--pow-muted);
+    }
+
+    .pow-message.highlight {
+      color: var(--pow-success);
+    }
+
+    .pow-warning {
+      font-size: 0.8rem;
+      color: var(--pow-danger);
+      margin-bottom: 6px;
+      display: none;
+    }
+
+    /* Modal for instructions */
+    .pow-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .pow-modal {
+      max-width: 520px;
+      width: 92%;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.18);
+      padding: 16px 18px 14px;
+    }
+
+    .pow-modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .pow-modal-sub {
+      font-size: 0.85rem;
+      color: var(--pow-muted);
+      margin-bottom: 10px;
+    }
+
+    .pow-modal-section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-text {
+      font-size: 0.8rem;
+      color: var(--pow-text);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .pow-modal-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .pow-modal-footer button {
+      padding: 6px 16px;
+      font-size: 0.9rem;
+    }
+
+    /* ---------- Mobile tweaks ---------- */
+    @media (max-width: 768px) {
+      .pow-header-title {
+        font-size: 1.1rem;
+      }
+
+      .pow-play-area {
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .pow-card {
+        padding: 8px;
+      }
+
+      .pow-word {
+        font-size: 1.4rem;
+      }
+
+      .pow-image-wrapper {
+        padding-top: 55%; /* shallower so buttons stay in view */
+      }
+
+      .pow-relation-card {
+        flex: 0 0 110px;
+      }
+
+      .pow-relation-label {
+        font-size: 1.4rem;
+      }
+
+      .pow-actions {
+        margin-bottom: 6px;
+      }
+
+      .pow-actions button {
+        padding: 10px 8px;
+        font-size: 0.95rem;
+      }
+
+      .pow-status-bar {
+        gap: 4px;
+        padding: 4px;
+        font-size: 0.75rem;
+      }
+
+      .pow-status-item {
+        min-width: 90px;
+      }
+
+      .pow-helper-text {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .pow-play-area {
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+
+      .pow-card {
+        padding: 6px;
+        border-radius: 16px;
+      }
+
+      .pow-word {
+        font-size: 1.1rem;
+      }
+
+      .pow-image-wrapper {
+        padding-top: 40%; /* even shallower on very small screens */
+      }
+
+      .pow-relation-card {
+        flex: 0 0 90px;
+      }
+
+      .pow-relation-label {
+        font-size: 1.2rem;
+      }
+
+      .pow-status-bar {
+        font-size: 0.7rem;
+        margin-bottom: 6px;
+      }
+
+      .pow-status-item {
+        min-width: 80px;
+      }
+
+      .pow-actions {
+        margin-bottom: 6px;
+      }
+
+      .pow-actions button {
+        font-size: 0.9rem;
+        padding: 8px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="pow-decision-game">
+<div class="pow-header">
+<div class="pow-header-title">Test and Improve Your Decision Making</div>
+<div class="pow-mode-buttons">
+<button class="pow-ghost" id="modeToggleButton">Mode: Short (10)</button>
+<button class="pow-ghost" id="newPlayerButton">New Player</button>
+<button class="pow-primary" id="startStopButton">Start</button>
+</div>
+</div>
+<div class="pow-warning" id="orientationWarning">
+    For best experience on mobile, rotate your device to landscape.
+  </div>
+<!-- PLAY AREA: picture (left) – relation (middle) – word (right) -->
+<div class="pow-play-area">
+<!-- Picture LEFT -->
+<div class="pow-card">
+<div class="pow-image-wrapper">
+<img alt="Decision picture" id="pictureDisplay"/>
+</div>
+</div>
+<!-- Relation MIDDLE -->
+<div class="pow-card pow-relation-card">
+<div class="pow-relation-label" id="relationLabel">is</div>
+</div>
+<!-- Word RIGHT -->
+<div class="pow-card">
+<div class="pow-word" id="wordDisplay">Press Start</div>
+</div>
+</div>
+<div class="pow-actions">
+<button class="false" id="falseButton">False</button>
+<button class="true" id="trueButton">True</button>
+</div>
+<div class="pow-status-bar">
+<div class="pow-status-item">
+<div class="pow-label">Mode</div>
+<div class="pow-value" id="statusMode">Short (10)</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Question</div>
+<div class="pow-value" id="statusQuestion">0 / 10</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Session Time</div>
+<div class="pow-value" id="statusTotalTime">0.00s</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Avg Reaction</div>
+<div class="pow-value" id="statusAvgTime">0.00s</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Correct</div>
+<div class="pow-value" id="statusCorrect">0</div>
+</div>
+<div class="pow-status-item">
+<div class="pow-label">Incorrect</div>
+<div class="pow-value" id="statusIncorrect">0</div>
+</div>
+</div>
+<div class="pow-helper-text" id="helperText">
+    Tap <strong>Mode</strong> to switch between Practice / Short / Long / Infinite,
+    then press <strong>Start</strong>.<br/>
+    You see a <strong>picture on the left</strong>, a middle box that says
+    <strong>“is”</strong> or <strong>“is not”</strong>, and a <strong>word on the right</strong>.<br/>
+    Answer <strong>True</strong> if that full sentence is correct.<br/>
+    On desktop: <strong>Left Arrow = False</strong>, <strong>Right Arrow = True</strong>.
+  </div>
+<div class="pow-summary" id="summaryPanel" style="display: none;">
+<div class="pow-summary-title">Run Summary</div>
+<div class="pow-summary-row">
+<span>Mode</span>
+<span id="summaryMode"></span>
+</div>
+<div class="pow-summary-row">
+<span>Questions</span>
+<span id="summaryQuestions"></span>
+</div>
+<div class="pow-summary-row">
+<span>Correct</span>
+<span id="summaryCorrect"></span>
+</div>
+<div class="pow-summary-row">
+<span>Incorrect</span>
+<span id="summaryIncorrect"></span>
+</div>
+<div class="pow-summary-row">
+<span>Total time</span>
+<span id="summaryTotalTime"></span>
+</div>
+<div class="pow-summary-row">
+<span>Average reaction</span>
+<span id="summaryAvgTime"></span>
+</div>
+<div class="pow-summary-row">
+<span>Your best (this mode)</span>
+<span id="summaryBest"></span>
+</div>
+<div class="pow-message" id="summaryMessage"></div>
+</div>
+<div class="pow-leaderboard-section pow-leaderboard">
+<div class="pow-leaderboard-header">
+<div>
+<div class="pow-leaderboard-title">
+          Leaderboard <span class="pow-tag" id="leaderboardModeLabel">Short</span>
+</div>
+<div class="pow-message" id="leaderboardRankingInfo">
+          Ranked by fewest mistakes, then total time, then average reaction.
+        </div>
+</div>
+<div>
+<button class="pow-primary" id="leaderboardToggleButton">
+          View: Short
+        </button>
+</div>
+</div>
+<div class="pow-leaderboard-table-wrapper">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Initials</th>
+<th>Q</th>
+<th>C</th>
+<th>IC</th>
+<th>Total (s)</th>
+<th>Avg (s)</th>
+</tr>
+</thead>
+<tbody id="leaderboardBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Instructions modal -->
+<div class="pow-modal-backdrop" id="instructionsModal" style="display:flex;">
+<div class="pow-modal">
+<div class="pow-modal-title">Welcome to the POW Decision Game</div>
+<div class="pow-modal-sub">
+      Train your moment-to-moment decision making with fast, honest feedback.
+    </div>
+<div class="pow-modal-section-title">How it works</div>
+<div class="pow-modal-text">
+      You see a <strong>picture on the left</strong>, a middle box that says
+      <strong>“is”</strong> or <strong style="color:#c0392b;">“is not”</strong>,
+      and a <strong>word on the right</strong>.
+    </div>
+<div class="pow-modal-text">
+      Your job is to decide if the full sentence is <strong>true or false</strong>.
+    </div>
+<div class="pow-modal-section-title">Controls</div>
+<div class="pow-modal-text">
+      • Tap / click the <strong>True</strong> or <strong>False</strong> buttons.<br/>
+      • On desktop you can also use:
+      <strong>Left Arrow → False</strong>, <strong>Right Arrow → True</strong>.
+    </div>
+<div class="pow-modal-section-title">Modes</div>
+<div class="pow-modal-text">
+      • <strong>Practice</strong>: Infinite questions, just train. Time and average reaction are shown, but not ranked.<br/>
+      • <strong>Short</strong>: 10 questions, recorded and ranked locally.<br/>
+      • <strong>Long</strong>: 20 questions, recorded and ranked separately.<br/>
+      • <strong>Infinite</strong>: Keeps going until your <strong>first mistake or timeout</strong>.
+      The allowed time per question starts at <strong>1.0s</strong> and gets
+      <strong>0.1s shorter every 50 correct answers</strong>, down to a minimum of <strong>0.3s</strong>.
+    </div>
+<div class="pow-modal-section-title">Scoring &amp; sounds</div>
+<div class="pow-modal-text">
+      • You get a <strong>green ding</strong> for a correct answer.<br/>
+      • A <strong>low buzzer</strong> means the answer (or timeout) was wrong.<br/>
+      • A <strong>start bell</strong> plays after the 3-2-1 countdown.<br/>
+      • A <strong>finish bell</strong> plays at the end of each run.
+    </div>
+<div class="pow-modal-text">
+      Locally, the leaderboard keeps only your <strong>best score per mode</strong>:
+      for Short/Long it ranks by fewest mistakes, then total time, then average reaction.
+      For Infinite it ranks by most correct, then average reaction, then total time.
+    </div>
+<div class="pow-modal-footer">
+<button class="pow-primary" id="instructionsCloseBtn">Got it</button>
+</div>
+</div>
+</div>
+<script>
+(function () {
+  const ITEMS = [
+    { key: "ball", label: "Ball", url: "https://static.wixstatic.com/media/eaef6d_7f2b9555f08e4407bcf27857bf332d3c~mv2.png" },
+    { key: "umbrella", label: "Umbrella", url: "https://static.wixstatic.com/media/eaef6d_a783bbb23e2f4960a84c5946322bd1d1~mv2.png" },
+    { key: "pig", label: "Pig", url: "https://static.wixstatic.com/media/eaef6d_12d8e64c3bbb45749e7d2328b1ea3329~mv2.png" },
+    { key: "butterfly", label: "Butterfly", url: "https://static.wixstatic.com/media/eaef6d_87217c52f3b44756834c0cc47ddb62fc~mv2.png" },
+    { key: "airplane", label: "Airplane", url: "https://static.wixstatic.com/media/eaef6d_fd2e5d6a21154331aad70d6079dce246~mv2.png" },
+    { key: "car", label: "Car", url: "https://static.wixstatic.com/media/eaef6d_ce7258f9c42342c49453582be5a69c88~mv2.png" },
+    { key: "mouse", label: "Mouse", url: "https://static.wixstatic.com/media/eaef6d_cb46105a23d049808c595598fe7d883f~mv2.png" },
+    { key: "hat", label: "Hat", url: "https://static.wixstatic.com/media/eaef6d_bb22e0b78d134c88bb6c67d4941ece27~mv2.png" },
+    { key: "house", label: "House", url: "https://static.wixstatic.com/media/eaef6d_6ece4136d1ec4dc8bf3f51c8e244766b~mv2.png" },
+    { key: "cow", label: "Cow", url: "https://static.wixstatic.com/media/eaef6d_df0c98fc5b28458db695aa5cb3d414a8~mv2.png" },
+    { key: "bus", label: "Bus", url: "https://static.wixstatic.com/media/eaef6d_64f8949a66c14145948d1cb0db7e7224~mv2.png" },
+    { key: "tree", label: "Tree", url: "https://static.wixstatic.com/media/eaef6d_0fd2bc64878e41a299cc22c3f0a35abf~mv2.png" },
+    { key: "flower", label: "Flower", url: "https://static.wixstatic.com/media/eaef6d_8cf53ea56de040f2b2ceecfe2a2619b4~mv2.png" },
+    { key: "bee", label: "Bee", url: "https://static.wixstatic.com/media/eaef6d_8f18d62b58914a7085530ea3d3183901~mv2.png" },
+    { key: "cup", label: "Cup", url: "https://static.wixstatic.com/media/eaef6d_633ee54b4fd9427bb9ef5a3d2e027fe3~mv2.png" },
+    { key: "ballerina", label: "Ballerina", url: "https://static.wixstatic.com/media/eaef6d_2a8b7bce57d24700b5bd133da2da1dd1~mv2.png" },
+    { key: "bird", label: "Bird", url: "https://static.wixstatic.com/media/eaef6d_653bf4fd82f94aff94796803666e80de~mv2.png" },
+    { key: "chair", label: "Chair", url: "https://static.wixstatic.com/media/eaef6d_3b4a0f88dd6d4ba485ed22d103eabf2a~mv2.png" },
+    { key: "book", label: "Book", url: "https://static.wixstatic.com/media/eaef6d_f0408751e9a640d88066b46722a8ea91~mv2.png" },
+    { key: "cherry", label: "Cherry", url: "https://static.wixstatic.com/media/eaef6d_97c92754a41d489eb0bb984377487207~mv2.png" }
+  ];
+
+  const STORAGE_KEY = "powDecisionGameStats_v2"; // bump version due to infinite mode
+
+  const el = {
+    modeToggleButton: document.getElementById("modeToggleButton"),
+    startStopButton: document.getElementById("startStopButton"),
+    statusMode: document.getElementById("statusMode"),
+    statusQuestion: document.getElementById("statusQuestion"),
+    statusTotalTime: document.getElementById("statusTotalTime"),
+    statusAvgTime: document.getElementById("statusAvgTime"),
+    statusCorrect: document.getElementById("statusCorrect"),
+    statusIncorrect: document.getElementById("statusIncorrect"),
+    wordDisplay: document.getElementById("wordDisplay"),
+    pictureDisplay: document.getElementById("pictureDisplay"),
+    relationLabel: document.getElementById("relationLabel"),
+    falseButton: document.getElementById("falseButton"),
+    trueButton: document.getElementById("trueButton"),
+    summaryPanel: document.getElementById("summaryPanel"),
+    summaryMode: document.getElementById("summaryMode"),
+    summaryQuestions: document.getElementById("summaryQuestions"),
+    summaryCorrect: document.getElementById("summaryCorrect"),
+    summaryIncorrect: document.getElementById("summaryIncorrect"),
+    summaryTotalTime: document.getElementById("summaryTotalTime"),
+    summaryAvgTime: document.getElementById("summaryAvgTime"),
+    summaryBest: document.getElementById("summaryBest"),
+    summaryMessage: document.getElementById("summaryMessage"),
+    leaderboardBody: document.getElementById("leaderboardBody"),
+    leaderboardModeLabel: document.getElementById("leaderboardModeLabel"),
+    leaderboardToggleButton: document.getElementById("leaderboardToggleButton"),
+    leaderboardRankingInfo: document.getElementById("leaderboardRankingInfo"),
+    orientationWarning: document.getElementById("orientationWarning"),
+    instructionsModal: document.getElementById("instructionsModal"),
+    instructionsCloseBtn: document.getElementById("instructionsCloseBtn")
+  };
+
+  /* ---- Audio ---- */
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!AudioCtx) return null;
+    if (!audioCtx) {
+      try { audioCtx = new AudioCtx(); } catch (e) { audioCtx = null; }
+    }
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, volume) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.value = volume;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {}
+  }
+
+  function playCountdownBeep(stepIndex) {
+    const base = 600;
+    playTone(base + stepIndex * 80, 0.15, 0.25);
+  }
+
+  function playStartBell() {
+    playTone(1000, 0.22, 0.3);
+  }
+
+  function playCorrectDing() {
+    playTone(880, 0.12, 0.28);
+  }
+
+  function playFinishBell() {
+    playTone(900, 0.16, 0.25);
+    setTimeout(() => playTone(700, 0.18, 0.22), 180);
+  }
+
+  function playWrongBuzz() {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 260;
+      gain.gain.value = 0.22;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch (e) {}
+  }
+
+  /* ---- Game state ---- */
+  let currentMode = "short"; // practice | short | long | infinite
+  let targetQuestions = 10;
+  let questionCount = 0;
+  let correctCount = 0;
+  let incorrectCount = 0;
+  let sessionStartTime = null;
+  let lastQuestionTime = null;
+  let totalReactionTime = 0;
+  let timerInterval = null;
+  let currentCorrectAnswer = null;
+  let currentQuestionActive = false;
+  let runActive = false;
+
+  let wordOrder = [];
+  let pictureOrder = [];
+
+  let lastWordIndex = null;
+  let lastPictureIndex = null;
+
+  let lastIsNot = null;
+  let relationStreak = 0;
+
+  let countdownActive = false;
+  let countdownTimers = [];
+
+  let leaderboardViewMode = "short";
+  let stats = loadStats();
+
+  // Infinite mode timing
+  const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
+  const INFINITE_MIN_TIME_LIMIT = 0.3;
+  let infiniteTimeLimit = INFINITE_BASE_TIME_LIMIT;
+  let questionTimeoutId = null;
+
+  function clearCountdownTimers() {
+    countdownTimers.forEach(id => clearTimeout(id));
+    countdownTimers = [];
+  }
+
+  function clearQuestionTimeout() {
+    if (questionTimeoutId !== null) {
+      clearTimeout(questionTimeoutId);
+      questionTimeoutId = null;
+    }
+  }
+
+  function updateInfiniteTimeLimit() {
+    // For each 50 correct answers, drop 0.1s, down to 0.3s
+    const steps = Math.floor(correctCount / 50);
+    const candidate = INFINITE_BASE_TIME_LIMIT - 0.1 * steps;
+    infiniteTimeLimit = candidate < INFINITE_MIN_TIME_LIMIT
+      ? INFINITE_MIN_TIME_LIMIT
+      : candidate;
+  }
+
+  function loadStats() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return {
+          playerInitials: "",
+          runs: {
+            short: { firstRun: null, bestRun: null, lastRun: null },
+            long: { firstRun: null, bestRun: null, lastRun: null },
+            infinite: { firstRun: null, bestRun: null, lastRun: null }
+          },
+          leaderboard: {
+            short: [],
+            long: [],
+            infinite: []
+          }
+        };
+      }
+      const parsed = JSON.parse(raw);
+
+      if (!parsed.runs) {
+        parsed.runs = {
+          short: { firstRun: null, bestRun: null, lastRun: null },
+          long: { firstRun: null, bestRun: null, lastRun: null },
+          infinite: { firstRun: null, bestRun: null, lastRun: null }
+        };
+      } else {
+        if (!parsed.runs.short)
+          parsed.runs.short = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.long)
+          parsed.runs.long = { firstRun: null, bestRun: null, lastRun: null };
+        if (!parsed.runs.infinite)
+          parsed.runs.infinite = { firstRun: null, bestRun: null, lastRun: null };
+      }
+
+      if (!parsed.leaderboard) {
+        parsed.leaderboard = { short: [], long: [], infinite: [] };
+      } else {
+        if (!parsed.leaderboard.short) parsed.leaderboard.short = [];
+        if (!parsed.leaderboard.long) parsed.leaderboard.long = [];
+        if (!parsed.leaderboard.infinite) parsed.leaderboard.infinite = [];
+      }
+
+      if (parsed.playerInitials === "???") parsed.playerInitials = "";
+
+      return parsed;
+    } catch (e) {
+      return {
+        playerInitials: "",
+        runs: {
+          short: { firstRun: null, bestRun: null, lastRun: null },
+          long: { firstRun: null, bestRun: null, lastRun: null },
+          infinite: { firstRun: null, bestRun: null, lastRun: null }
+        },
+        leaderboard: { short: [], long: [], infinite: [] }
+      };
+    }
+  }
+
+  function saveStats() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    } catch (e) {}
+  }
+
+  function formatSeconds(sec) {
+    if (!isFinite(sec) || sec < 0) return "0.00s";
+    return sec.toFixed(2) + "s";
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = temp;
+    }
+    return arr;
+  }
+
+  function resetState() {
+    clearCountdownTimers();
+    countdownActive = false;
+    clearQuestionTimeout();
+
+    questionCount = 0;
+    correctCount = 0;
+    incorrectCount = 0;
+    totalReactionTime = 0;
+    sessionStartTime = null;
+    lastQuestionTime = null;
+    currentCorrectAnswer = null;
+    currentQuestionActive = false;
+    runActive = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+
+    wordOrder = [];
+    pictureOrder = [];
+    lastWordIndex = null;
+    lastPictureIndex = null;
+
+    lastIsNot = null;
+    relationStreak = 0;
+    infiniteTimeLimit = INFINITE_BASE_TIME_LIMIT;
+
+    el.statusTotalTime.textContent = "0.00s";
+    el.statusAvgTime.textContent = "0.00s";
+    el.statusCorrect.textContent = "0";
+    el.statusIncorrect.textContent = "0";
+    el.statusQuestion.textContent =
+      "0 / " + (isFinite(targetQuestions) ? targetQuestions : "∞");
+
+    el.summaryPanel.style.display = "none";
+    el.summaryMessage.textContent = "";
+    el.wordDisplay.textContent = "Press Start";
+    el.relationLabel.textContent = "is";
+    el.relationLabel.classList.remove("pow-relation-not");
+
+    el.startStopButton.textContent = "Start";
+
+    if (ITEMS.length > 0) {
+      const idx = Math.floor(Math.random() * ITEMS.length);
+      const item = ITEMS[idx];
+      el.pictureDisplay.src = item.url;
+      el.pictureDisplay.alt = item.label;
+    } else {
+      el.pictureDisplay.src = "";
+      el.pictureDisplay.alt = "Decision picture";
+    }
+  }
+
+  function applyModeUI() {
+    let label;
+    if (currentMode === "practice") {
+      label = "Mode: Practice";
+      el.statusMode.textContent = "Practice";
+      el.statusQuestion.textContent = "0 / ∞";
+    } else if (currentMode === "short") {
+      label = "Mode: Short (10)";
+      el.statusMode.textContent = "Short (10)";
+      el.statusQuestion.textContent = "0 / 10";
+    } else if (currentMode === "long") {
+      label = "Mode: Long (20)";
+      el.statusMode.textContent = "Long (20)";
+      el.statusQuestion.textContent = "0 / 20";
+    } else {
+      label = "Mode: Infinite";
+      el.statusMode.textContent = "Infinite";
+      el.statusQuestion.textContent = "0 / ∞";
+    }
+    el.modeToggleButton.textContent = label;
+  }
+
+  function setMode(mode) {
+    if (runActive || countdownActive) {
+      stopRun(true);
+    }
+    currentMode = mode;
+    if (mode === "practice") {
+      targetQuestions = Infinity;
+    } else if (mode === "short") {
+      targetQuestions = 10;
+    } else if (mode === "long") {
+      targetQuestions = 20;
+    } else {
+      // infinite
+      targetQuestions = Infinity;
+    }
+    resetState();
+    applyModeUI();
+  }
+
+  function cycleMode() {
+    if (currentMode === "practice") {
+      setMode("short");
+    } else if (currentMode === "short") {
+      setMode("long");
+    } else if (currentMode === "long") {
+      setMode("infinite");
+    } else {
+      setMode("practice");
+    }
+  }
+
+  function prepareSequencesForRun() {
+    // Pre-set sequences only for short/long (fixed-length), not for practice/infinite
+    if (currentMode === "practice" || currentMode === "infinite") {
+      wordOrder = [];
+      pictureOrder = [];
+      return;
+    }
+    const indices = [];
+    for (let i = 0; i < ITEMS.length; i++) indices.push(i);
+
+    const wordIndices = indices.slice();
+    shuffleArray(wordIndices);
+    wordOrder = wordIndices.slice(0, targetQuestions);
+
+    const pictureIndices = indices.slice();
+    shuffleArray(pictureIndices);
+    pictureOrder = pictureIndices.slice(0, targetQuestions);
+  }
+
+  function updateTimer() {
+    if (!sessionStartTime) return;
+    const now = performance.now();
+    const totalSec = (now - sessionStartTime) / 1000;
+    el.statusTotalTime.textContent = formatSeconds(totalSec);
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+    el.statusAvgTime.textContent = formatSeconds(avgReaction);
+  }
+
+  function randomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  function chooseIsNot() {
+    let isNot;
+    if (lastIsNot === null) {
+      isNot = Math.random() < 0.5;
+      lastIsNot = isNot;
+      relationStreak = 1;
+    } else {
+      const randomVal = Math.random() < 0.5;
+      if (randomVal === lastIsNot && relationStreak >= 2) {
+        isNot = !lastIsNot;
+      } else {
+        isNot = randomVal;
+      }
+      if (isNot === lastIsNot) {
+        relationStreak++;
+      } else {
+        lastIsNot = isNot;
+        relationStreak = 1;
+      }
+    }
+    return isNot;
+  }
+
+  function nextQuestion() {
+    if (!runActive) return;
+
+    // For fixed modes, stop if we've hit target
+    if (currentMode !== "practice" && currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
+      stopRun(false);
+      return;
+    }
+
+    clearQuestionTimeout();
+
+    let wordIndex;
+    let imageIndex;
+    let isNot;
+
+    if (currentMode === "practice" || currentMode === "infinite") {
+      if (ITEMS.length === 0) return;
+
+      // Word: never the same consecutively
+      if (ITEMS.length === 1) {
+        wordIndex = 0;
+      } else {
+        do {
+          wordIndex = randomInt(ITEMS.length);
+        } while (wordIndex === lastWordIndex);
+      }
+
+      // Picture: never the same consecutively
+      if (ITEMS.length === 1) {
+        imageIndex = 0;
+      } else {
+        do {
+          imageIndex = randomInt(ITEMS.length);
+        } while (imageIndex === lastPictureIndex);
+      }
+
+      isNot = chooseIsNot();
+    } else {
+      const idx = questionCount;
+      wordIndex = wordOrder[idx];
+      imageIndex = pictureOrder[idx];
+      isNot = chooseIsNot();
+    }
+
+    const wordItem = ITEMS[wordIndex];
+    const imageItem = ITEMS[imageIndex];
+
+    el.wordDisplay.textContent = wordItem.label;
+    el.pictureDisplay.src = imageItem.url || "";
+    el.pictureDisplay.alt = imageItem.label;
+
+    if (isNot) {
+      el.relationLabel.textContent = "is not";
+      el.relationLabel.classList.add("pow-relation-not");
+    } else {
+      el.relationLabel.textContent = "is";
+      el.relationLabel.classList.remove("pow-relation-not");
+    }
+
+    const match = wordIndex === imageIndex;
+    currentCorrectAnswer = isNot ? !match : match;
+
+    lastWordIndex = wordIndex;
+    lastPictureIndex = imageIndex;
+
+    lastQuestionTime = performance.now();
+    currentQuestionActive = true;
+
+    const totalQ = isFinite(targetQuestions) ? targetQuestions : "∞";
+    el.statusQuestion.textContent = (questionCount + 1) + " / " + totalQ;
+
+    if (currentMode === "infinite") {
+      updateInfiniteTimeLimit();
+      questionTimeoutId = setTimeout(handleTimeout, infiniteTimeLimit * 1000);
+    }
+  }
+
+  function handleTimeout() {
+    // Only used in infinite mode
+    if (!runActive || !currentQuestionActive || currentMode !== "infinite") return;
+    currentQuestionActive = false;
+    clearQuestionTimeout();
+
+    questionCount++;
+    incorrectCount++;
+    totalReactionTime += infiniteTimeLimit; // treat as full allotted time
+    el.statusCorrect.textContent = String(correctCount);
+    el.statusIncorrect.textContent = String(incorrectCount);
+
+    playWrongBuzz();
+    // Timeout ends infinite run
+    stopRun(false);
+  }
+
+  function handleAnswer(answerIsTrue) {
+    if (!runActive || !currentQuestionActive) return;
+
+    clearQuestionTimeout();
+
+    const now = performance.now();
+    const reactionSec = lastQuestionTime ? (now - lastQuestionTime) / 1000 : 0;
+    totalReactionTime += reactionSec;
+    questionCount++;
+
+    const isCorrect = answerIsTrue === currentCorrectAnswer;
+    if (isCorrect) {
+      correctCount++;
+      playCorrectDing();
+    } else {
+      incorrectCount++;
+      playWrongBuzz();
+    }
+
+    el.statusCorrect.textContent = String(correctCount);
+    el.statusIncorrect.textContent = String(incorrectCount);
+
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        questionCount >= targetQuestions) {
+      currentQuestionActive = false;
+      stopRun(false);
+    } else if (currentMode === "infinite" && !isCorrect) {
+      // First mistake ends infinite run
+      currentQuestionActive = false;
+      stopRun(false);
+    } else {
+      nextQuestion();
+    }
+  }
+
+  // Comparators --------------------------------
+
+  // Short/Long: fewest mistakes, then lowest totalTime, then lowest avgReaction
+  function compareShortLong(a, b) {
+    if (a.incorrect !== b.incorrect) return a.incorrect - b.incorrect;
+    if (a.totalTime !== b.totalTime) return a.totalTime - b.totalTime;
+    return a.avgReaction - b.avgReaction;
+  }
+
+  // Infinite: most correct, then lowest avgReaction, then lowest totalTime
+  function compareInfinite(a, b) {
+    if (a.correct !== b.correct) return b.correct - a.correct;
+    if (a.avgReaction !== b.avgReaction) return a.avgReaction - b.avgReaction;
+    return a.totalTime - b.totalTime;
+  }
+
+  function compareRunsByMode(mode, a, b) {
+    if (mode === "infinite") return compareInfinite(a, b);
+    return compareShortLong(a, b);
+  }
+
+  function isBetterRun(mode, candidate, baseline) {
+    if (!baseline) return true;
+    return compareRunsByMode(mode, candidate, baseline) < 0;
+  }
+
+  function ensureInitials() {
+    const prev = (stats.playerInitials || "").trim().toUpperCase();
+    const hasValidPrev = prev && prev !== "???";
+    if (hasValidPrev) return prev;
+
+    let initials = "";
+    while (true) {
+      const input = prompt("Enter your initials (1–4 characters):", "") || "";
+      initials = input.trim().toUpperCase();
+
+      if (!initials) {
+        if (!confirm("No initials entered. Try again?")) break;
+      } else {
+        if (initials.length > 4) initials = initials.substring(0, 4);
+        break;
+      }
+    }
+
+    if (initials) {
+      stats.playerInitials = initials;
+      saveStats();
+      return initials;
+    }
+
+    if (hasValidPrev) return prev;
+    return "???";
+  }
+
+  function finalizeRun() {
+    if (!currentMode || currentMode === "practice") return;
+
+    // For short/long we only record fully completed runs
+    if (currentMode !== "practice" &&
+        currentMode !== "infinite" &&
+        isFinite(targetQuestions) &&
+        questionCount < targetQuestions) {
+      return;
+    }
+
+    if (questionCount <= 0) return;
+
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    const run = {
+      mode: currentMode,
+      questions: questionCount,
+      correct: correctCount,
+      incorrect: incorrectCount,
+      totalTime: totalTimeSec,
+      avgReaction: avgReaction,
+      timestamp: Date.now()
+    };
+
+    const modeKey = currentMode;
+    const runBucket = stats.runs[modeKey];
+
+    if (!runBucket.firstRun) {
+      runBucket.firstRun = run;
+    }
+    runBucket.lastRun = run;
+
+    let isPersonalBest = false;
+    if (!runBucket.bestRun || isBetterRun(modeKey, run, runBucket.bestRun)) {
+      runBucket.bestRun = run;
+      isPersonalBest = true;
+    }
+
+    const initials = ensureInitials();
+    const normalizedInitials = (initials || "???").toUpperCase();
+    let leaderboard = stats.leaderboard[modeKey] || [];
+    let leaderboardMessage = "";
+    let qualifies = false;
+
+    const entry = {
+      initials: normalizedInitials,
+      questions: run.questions,
+      correct: run.correct,
+      incorrect: run.incorrect,
+      totalTime: run.totalTime,
+      avgReaction: run.avgReaction,
+      timestamp: run.timestamp
+    };
+
+    const existingIndex = leaderboard.findIndex(
+      e => (e.initials || "???").toUpperCase() === normalizedInitials
+    );
+
+    const compareFn = (a, b) => compareRunsByMode(modeKey, a, b);
+
+    if (existingIndex >= 0) {
+      const existing = leaderboard[existingIndex];
+      if (compareFn(run, existing) < 0) {
+        leaderboard[existingIndex] = entry;
+        qualifies = true;
+        leaderboardMessage = "You improved your best score for this mode.";
+      } else {
+        qualifies = false;
+        leaderboardMessage =
+          "This run did not beat your best score for this mode.";
+      }
+    } else {
+      if (leaderboard.length < 100) {
+        leaderboard.push(entry);
+        qualifies = true;
+        leaderboardMessage = "This run made it into the top 100 for this mode.";
+      } else {
+        const worst = leaderboard[leaderboard.length - 1];
+        if (compareFn(run, worst) < 0) {
+          leaderboard.push(entry);
+          qualifies = true;
+          leaderboardMessage =
+            "This run made it into the top 100 for this mode.";
+        } else {
+          qualifies = false;
+          leaderboardMessage =
+            "This run did not reach the top 100, but it is still recorded as your current run.";
+        }
+      }
+    }
+
+    if (qualifies) {
+      leaderboard.sort(compareFn);
+      leaderboard = leaderboard.slice(0, 100);
+      stats.leaderboard[modeKey] = leaderboard;
+    }
+
+    saveStats();
+    renderLeaderboard(leaderboardViewMode);
+    const best = stats.runs[modeKey].bestRun;
+    showSummary(run, best, isPersonalBest, leaderboardMessage);
+    playFinishBell();
+  }
+
+  function showSummary(run, bestRun, isPersonalBest, leaderboardMessage) {
+    let modeLabel;
+    if (run.mode === "practice") modeLabel = "Practice";
+    else if (run.mode === "short") modeLabel = "Short (10)";
+    else if (run.mode === "long") modeLabel = "Long (20)";
+    else modeLabel = "Infinite";
+
+    el.summaryMode.textContent = modeLabel;
+
+    el.summaryQuestions.textContent = run.questions;
+    el.summaryCorrect.textContent = run.correct;
+    el.summaryIncorrect.textContent = run.incorrect;
+    el.summaryTotalTime.textContent = formatSeconds(run.totalTime);
+    el.summaryAvgTime.textContent = formatSeconds(run.avgReaction);
+
+    if (run.mode === "practice") {
+      el.summaryBest.textContent = "Not tracked for practice mode.";
+    } else if (bestRun) {
+      if (run.mode === "infinite") {
+        el.summaryBest.textContent =
+          "Correct: " +
+          bestRun.correct +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction) +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime);
+      } else {
+        el.summaryBest.textContent =
+          "IC:" +
+          bestRun.incorrect +
+          ", Total: " +
+          formatSeconds(bestRun.totalTime) +
+          ", Avg: " +
+          formatSeconds(bestRun.avgReaction);
+      }
+    } else {
+      el.summaryBest.textContent = "—";
+    }
+
+    let msg = leaderboardMessage || "";
+    if (run.mode !== "practice") {
+      if (isPersonalBest) {
+        msg += (msg ? " " : "") + "Personal best for this mode!";
+      } else if (!msg) {
+        msg = "Keep going to beat your best score.";
+      }
+    } else if (!msg) {
+      msg = "Practice session complete.";
+    }
+
+    el.summaryMessage.textContent = msg;
+    el.summaryMessage.classList.toggle("highlight", isPersonalBest);
+    el.summaryPanel.style.display = "block";
+  }
+
+  function renderLeaderboard(modeKey) {
+    leaderboardViewMode = modeKey;
+    const list = stats.leaderboard[modeKey] || [];
+    el.leaderboardBody.innerHTML = "";
+
+    if (modeKey === "short") {
+      el.leaderboardModeLabel.textContent = "Short";
+      el.leaderboardToggleButton.textContent = "View: Short";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by fewest mistakes, then total time, then average reaction.";
+    } else if (modeKey === "long") {
+      el.leaderboardModeLabel.textContent = "Long";
+      el.leaderboardToggleButton.textContent = "View: Long";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by fewest mistakes, then total time, then average reaction.";
+    } else {
+      el.leaderboardModeLabel.textContent = "Infinite";
+      el.leaderboardToggleButton.textContent = "View: Infinite";
+      el.leaderboardRankingInfo.textContent =
+        "Ranked by most correct, then average reaction, then total time.";
+    }
+
+    list.forEach((entry, index) => {
+      const tr = document.createElement("tr");
+      const rank = index + 1;
+
+      function cell(text) {
+        const td = document.createElement("td");
+        td.textContent = text;
+        return td;
+      }
+
+      tr.appendChild(cell(rank));
+      tr.appendChild(cell(entry.initials || "???"));
+      tr.appendChild(cell(entry.questions));
+      tr.appendChild(cell(entry.correct));
+      tr.appendChild(cell(entry.incorrect));
+      tr.appendChild(cell((entry.totalTime || 0).toFixed(2)));
+      tr.appendChild(cell((entry.avgReaction || 0).toFixed(2)));
+
+      el.leaderboardBody.appendChild(tr);
+    });
+  }
+
+  function toggleLeaderboardMode() {
+    if (leaderboardViewMode === "short") {
+      renderLeaderboard("long");
+    } else if (leaderboardViewMode === "long") {
+      renderLeaderboard("infinite");
+    } else {
+      renderLeaderboard("short");
+    }
+  }
+
+  function handleOrientationWarning() {
+    const isMobile =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      window.innerWidth < 900;
+    const portrait = window.innerHeight > window.innerWidth;
+    el.orientationWarning.style.display =
+      isMobile && portrait ? "block" : "none";
+  }
+
+  function startCountdownThenRun() {
+    if (countdownActive || runActive) return;
+    countdownActive = true;
+    el.summaryPanel.style.display = "none";
+
+    el.wordDisplay.textContent = "Get ready...";
+    el.relationLabel.textContent = "";
+    el.relationLabel.classList.remove("pow-relation-not");
+
+    el.falseButton.disabled = true;
+    el.trueButton.disabled = true;
+
+    el.startStopButton.textContent = "Stop";
+
+    const steps = [3, 2, 1];
+    let delay = 500;
+
+    steps.forEach((num, idx) => {
+      const t = setTimeout(() => {
+        el.wordDisplay.textContent = String(num);
+        playCountdownBeep(idx);
+      }, delay);
+      countdownTimers.push(t);
+      delay += 1000;
+    });
+
+    const finalTimeout = setTimeout(() => {
+      countdownActive = false;
+      playStartBell();
+      actuallyStartRun();
+    }, delay);
+    countdownTimers.push(finalTimeout);
+  }
+
+  function actuallyStartRun() {
+    if (runActive) return;
+    runActive = true;
+    el.falseButton.disabled = false;
+    el.trueButton.disabled = false;
+
+    el.startStopButton.textContent = "Stop";
+
+    sessionStartTime = performance.now();
+    timerInterval = setInterval(updateTimer, 50);
+    nextQuestion();
+  }
+
+  function stopRun(manual) {
+    if (!runActive && !countdownActive) return;
+
+    clearCountdownTimers();
+    countdownActive = false;
+    clearQuestionTimeout();
+
+    if (!runActive) {
+      resetState();
+      return;
+    }
+
+    runActive = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    currentQuestionActive = false;
+
+    const totalTimeSec = sessionStartTime ? (performance.now() - sessionStartTime) / 1000 : 0;
+    const avgReaction = questionCount > 0 ? totalReactionTime / questionCount : 0;
+
+    el.startStopButton.textContent = "Start";
+
+    if (currentMode === "practice") {
+      showSummary(
+        {
+          mode: currentMode,
+          questions: questionCount,
+          correct: correctCount,
+          incorrect: incorrectCount,
+          totalTime: totalTimeSec,
+          avgReaction: avgReaction
+        },
+        null,
+        false,
+        manual ? "Practice session stopped." : "Practice session complete."
+      );
+      playFinishBell();
+    } else if (currentMode === "infinite") {
+      if (manual) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs.infinite?.bestRun || null,
+          false,
+          "Infinite run stopped manually. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
+    } else {
+      // short / long
+      if (questionCount < targetQuestions) {
+        showSummary(
+          {
+            mode: currentMode,
+            questions: questionCount,
+            correct: correctCount,
+            incorrect: incorrectCount,
+            totalTime: totalTimeSec,
+            avgReaction: avgReaction
+          },
+          stats.runs[currentMode]?.bestRun || null,
+          false,
+          "Run stopped before completion. Not recorded for leaderboard or best score."
+        );
+        playFinishBell();
+      } else {
+        finalizeRun();
+      }
+    }
+  }
+
+  // ---- Event wiring ----
+
+  el.modeToggleButton.addEventListener("click", cycleMode);
+
+  el.startStopButton.addEventListener("click", function () {
+    if (!runActive && !countdownActive) {
+      resetState();
+      if (currentMode !== "practice" && currentMode !== "infinite") {
+        prepareSequencesForRun();
+      }
+      startCountdownThenRun();
+    } else {
+      stopRun(true);
+    }
+  });
+
+  el.falseButton.addEventListener("click", function () { handleAnswer(false); });
+  el.trueButton.addEventListener("click", function () { handleAnswer(true); });
+
+  window.addEventListener("keydown", function (e) {
+    if (!runActive || countdownActive) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      handleAnswer(false);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleAnswer(true);
+    }
+  });
+
+  el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
+  window.addEventListener("resize", handleOrientationWarning);
+
+  el.instructionsCloseBtn.addEventListener("click", function () {
+    el.instructionsModal.style.display = "none";
+  });
+
+  
+  document.getElementById("newPlayerButton").addEventListener("click", function () {
+    stats.playerInitials = "";
+    saveStats();
+    alert("Initials cleared. You will be asked for new initials next time you play.");
+  });
+
+  // ---- Init ----
+  applyModeUI();
+  resetState();
+  renderLeaderboard("short");
+  handleOrientationWarning();
+})();
+</script>
+<script>
+const API_BASE = "https://peopleoftheworld.net/_functions/decisionGame";
+
+async function saveScoreToWix(score) {
+  try {
+    const response = await fetch(`${API_BASE}/saveScore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(score),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error("Save failed:", err);
+    return null;
+  }
+}
+
+async function fetchLeaderboardFromWix(mode) {
+  try {
+    const response = await fetch(`${API_BASE}/leaderboard?mode=${mode}`);
+    const data = await response.json();
+    return data.results || [];
+  } catch (err) {
+    console.error("Leaderboard fetch failed:", err);
+    return [];
+  }
+}
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof fetchLeaderboardFromWix === "function") {
+    const currentMode = typeof getCurrentMode === "function" ? getCurrentMode() : "short";
+    const data = await fetchLeaderboardFromWix(currentMode);
+    if (typeof renderLeaderboard === "function") {
+      renderLeaderboard(data);
+    }
+  }
+});
+</script>
+<script>
+
+
+
+
+function loadLeaderboard(mode) {
+  fetchLeaderboardFromWix(mode || "short");
+}
+
+
+</script></body>
+</html>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const mode = "short";
+  const data = await fetchLeaderboardFromWix(mode);
+  stats.leaderboard[mode] = data;
+  renderLeaderboard(mode);
+});
+</script>
