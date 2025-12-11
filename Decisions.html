@@ -811,16 +811,6 @@
   let leaderboardViewMode = "short";
   let stats = loadStats();
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    const mode = "short";
-    const data = await fetchLeaderboardFromWix(mode);
-    if (data && data.length) {
-      stats.leaderboard[mode] = data;
-    }
-    renderLeaderboard(mode);
-  });
-
-
   // Infinite mode timing
   const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
   const INFINITE_MIN_TIME_LIMIT = 0.3;
@@ -1491,7 +1481,7 @@ function renderLeaderboard(modeKey) {
   });
 }
 );
-}
+  }
 
   function toggleLeaderboardMode() {
     if (leaderboardViewMode === "short") {
@@ -1670,14 +1660,11 @@ function renderLeaderboard(modeKey) {
   });
 
   el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
-  
+  window.addEventListener("resize", handleOrientationWarning);
+
   el.instructionsCloseBtn.addEventListener("click", function () {
     el.instructionsModal.style.display = "none";
   });
-
-  window.addEventListener("resize", handleOrientationWarning);
-
-  
 
   
   document.getElementById("newPlayerButton").addEventListener("click", function () {
@@ -1736,4 +1723,13 @@ function loadLeaderboard(mode) {
 </html>
 
 
-
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const mode = "short";
+  const data = await fetchLeaderboardFromWix(mode);
+  if (data && data.length) {
+    stats.leaderboard[mode] = data;
+  }
+  renderLeaderboard(mode);
+});
+</script>
