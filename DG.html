@@ -809,6 +809,172 @@
 
   let leaderboardViewMode = "short";
   let stats = loadStats();
+  /* Paste this snippet immediately after the line:
+     let stats = loadStats();
+   inside the main <script> IIFE in DG.html.
+
+   It will fetch the remote leaderboard from your Wix http-function backend
+   and merge those results into the existing stats.leaderboard so the UI
+   shows the remote scores (falling back to local data on error).
+
+   The backend endpoint this uses (matching your tester) is:
+     https://www.peopleoftheworld.net/_functions/decisionGame/leaderboard?mode=<mode>
+
+   If you host the functions at a different base, update REMOTE_BASE accordingly.
+*/
+
+  // --- Remote leaderboard integration (START) ---
+  const REMOTE_BASE = "https://www.peopleoftheworld.net"; // update if needed
+  const REMOTE_ENDPOINT = "/_functions/decisionGame/leaderboard";
+
+  // Track whether a remote load was attempted / succeeded
+  let remoteLoaded = false;
+
+  async function fetchRemoteLeaderboardForMode(mode) {
+    if (!REMOTE_BASE) return null;
+    const url = `${REMOTE_BASE.replace(/\/+$/, "")}${REMOTE_ENDPOINT}?mode=${encodeURIComponent(mode)}`;
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        console.warn("Remote leaderboard fetch failed:", res.status, res.statusText, url);
+        return null;
+      }
+      const json = await res.json();
+      if (!json || !Array.isArray(json.results)) {
+        console.warn("Remote leaderboard returned unexpected shape:", json);
+        return null;
+      }
+      return json.results;
+    } catch (err) {
+      console.warn("Remote leaderboard fetch error:", err);
+      return null;
+    }
+  }
+
+  // Fetch all modes (non-blocking) and merge into stats.leaderboard
+  async function fetchAndMergeRemoteLeaderboards() {
+    // Ensure stats has leaderboard object
+    stats.leaderboard = stats.leaderboard || { short: [], long: [], infinite: [] };
+
+    const modes = ["short", "long", "infinite"];
+    const promises = modes.map(m => fetchRemoteLeaderboardForMode(m));
+    const results = await Promise.all(promises);
+
+    let any = false;
+    modes.forEach((m, i) => {
+      const arr = results[i];
+      if (Array.isArray(arr) && arr.length) {
+        // Normalize objects into the format DG expects
+        // Backend provides: { rank, initials, correct, questions, totalTime, avgReaction }
+        stats.leaderboard[m] = arr.map(item => ({
+          initials: item.initials || item.name || "---",
+          questions: (typeof item.questions === "number") ? item.questions : (item.q || null),
+          correct: (typeof item.correct === "number") ? item.correct : (item.c || null),
+          incorrect: (typeof item.incorrect === "number") ? item.incorrect : null,
+          totalTime: (typeof item.totalTime === "number") ? item.totalTime : (item.total || null),
+          avgReaction: (typeof item.avgReaction === "number") ? item.avgReaction : (item.avg || null),
+          // Keep raw item available if needed
+          __raw: item
+        }));
+        any = true;
+      }
+    });
+
+    if (any) {
+      remoteLoaded = true;
+      if (el && el.leaderboardRankingInfo) {
+        el.leaderboardRankingInfo.textContent = "Leaderboard loaded from remote";
+      }
+      // If the leaderboard is currently visible, refresh it
+      if (typeof refreshLeaderboardUI === "function") {
+        refreshLeaderboardUI();
+      } else {
+        // Otherwise, call the local render helper we add below
+        renderLeaderboardFromStats();
+      }
+      // persist merged leaderboard locally (optional)
+      try { saveStats(); } catch (e) { /* ignore */ }
+    } else {
+      if (el && el.leaderboardRankingInfo && !remoteLoaded) {
+        el.leaderboardRankingInfo.textContent = "Using local leaderboard (remote load failed)";
+      }
+    }
+  }
+
+  // Helper to render the leaderboard UI from stats.leaderboard[leaderboardViewMode]
+  // If your original code already has a renderer, you can remove/replace this function
+  function renderLeaderboardFromStats() {
+    try {
+      const mode = leaderboardViewMode || "short";
+      const rows = (stats && stats.leaderboard && stats.leaderboard[mode]) ? stats.leaderboard[mode] : [];
+      const body = el.leaderboardBody;
+      body.innerHTML = "";
+
+      if (!Array.isArray(rows) || rows.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 7;
+        td.textContent = "No leaderboard entries.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+        el.leaderboardModeLabel.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+        el.leaderboardToggleButton.textContent = "View: " + (mode.charAt(0).toUpperCase() + mode.slice(1));
+        return;
+      }
+
+      rows.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        const initials = r.initials || "---";
+        const q = (typeof r.questions === "number") ? r.questions : (r.questions || "-");
+        const c = (typeof r.correct === "number") ? r.correct : (r.correct || "-");
+        const ic = (typeof r.incorrect === "number") ? r.incorrect : ( (typeof q === "number" && typeof c === "number") ? (q - c) : "-" );
+        // Backend stores times in ms (the tester divided totalTime/1000). Display seconds with 2 decimals.
+        const total = (typeof r.totalTime === "number") ? ( (r.totalTime/1000).toFixed(2) + "s" ) : (r.total || "-");
+        const avg = (typeof r.avgReaction === "number") ? ( (r.avgReaction/1000).toFixed(3) + "s" ) : (r.avg || "-");
+
+        tr.innerHTML = `<td>${i + 1}</td>
+                        <td>${initials}</td>
+                        <td>${q}</td>
+                        <td>${c}</td>
+                        <td>${ic}</td>
+                        <td>${total}</td>
+                        <td>${avg}</td>`;
+        body.appendChild(tr);
+      });
+
+      el.leaderboardModeLabel.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+      el.leaderboardToggleButton.textContent = "View: " + (mode.charAt(0).toUpperCase() + mode.slice(1));
+    } catch (e) {
+      console.warn("renderLeaderboardFromStats error", e);
+    }
+  }
+
+  // Provide a simple toggle handler that cycles the leaderboard view
+  // If DG.html already has a toggle handler for el.leaderboardToggleButton, you can remove this block.
+  if (el.leaderboardToggleButton) {
+    el.leaderboardToggleButton.addEventListener("click", () => {
+      const order = ["short", "long", "infinite"];
+      const idx = order.indexOf(leaderboardViewMode);
+      const next = order[(idx + 1) % order.length];
+      leaderboardViewMode = next;
+      // Re-render using merged remote/local data
+      if (typeof refreshLeaderboardUI === "function") refreshLeaderboardUI();
+      else renderLeaderboardFromStats();
+    });
+  }
+
+  // If the original code exposes a refreshLeaderboardUI, prefer to call it after remote load.
+  // Otherwise make sure the UI is initially populated from local stats and then the remote load will update it.
+  // Initial render:
+  try {
+    if (typeof refreshLeaderboardUI === "function") refreshLeaderboardUI();
+    else renderLeaderboardFromStats();
+  } catch (e) {}
+
+  // Fire the remote load in background (non-blocking)
+  // You can comment this out to only fetch when user toggles leaderboard
+  setTimeout(fetchAndMergeRemoteLeaderboards, 150);
+  // --- Remote leaderboard integration (END) ---
 
   // Infinite mode timing
   const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
