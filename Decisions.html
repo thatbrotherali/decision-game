@@ -1703,17 +1703,7 @@ async function fetchLeaderboardFromWix(mode) {
   }
 }
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  if (typeof fetchLeaderboardFromWix === "function") {
-    const currentMode = typeof getCurrentMode === "function" ? getCurrentMode() : "short";
-    const data = await fetchLeaderboardFromWix(currentMode);
-    if (typeof renderLeaderboard === "function") {
-      renderLeaderboard(data);
-    }
-  }
-});
-</script>
+
 <script>
 
 
@@ -1727,11 +1717,14 @@ function loadLeaderboard(mode) {
 </script></body>
 </html>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   const mode = "short";
   const data = await fetchLeaderboardFromWix(mode);
-  stats.leaderboard[mode] = data;
+  if (data && data.length) {
+    stats.leaderboard[mode] = data;
+  }
   renderLeaderboard(mode);
 });
 </script>
