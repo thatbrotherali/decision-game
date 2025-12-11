@@ -1708,56 +1708,5 @@ function loadLeaderboard(mode) {
 document.addEventListener("DOMContentLoaded", () => {
   loadLeaderboard("short");
 });
-</script>
-<script>
-(function () {
-  const initialsInput = document.getElementById("playerInitialsInput");
-  const startButton = document.getElementById("startStopButton");
-  const initialsLabel = initialsInput?.previousElementSibling;
-
-  function flashInputIfEmpty() {
-    if (!initialsInput || !initialsLabel) return;
-    if (initialsInput.value.trim() === "") {
-      initialsInput.style.borderColor = "red";
-      initialsLabel.style.color = "red";
-    } else {
-      initialsInput.style.borderColor = "";
-      initialsLabel.style.color = "";
-    }
-  }
-
-  function validateInitialsBeforeStart(event) {
-    if (!initialsInput || initialsInput.value.trim() === "") {
-      flashInputIfEmpty();
-      event.preventDefault();
-    }
-  }
-
-  function getInitialsFromBox() {
-    return (initialsInput?.value.trim().toUpperCase() || "").substring(0, 4);
-  }
-
-  function overrideEnsureInitials() {
-    if (!initialsInput) return "???";
-    const val = getInitialsFromBox();
-    return val || "???";
-  }
-
-  // Override original function
-  window.ensureInitials = overrideEnsureInitials;
-
-  // Prevent start if empty
-  if (startButton) {
-    startButton.addEventListener("click", validateInitialsBeforeStart);
-  }
-
-  // Highlight on blur if empty
-  if (initialsInput) {
-    initialsInput.addEventListener("blur", flashInputIfEmpty);
-    initialsInput.addEventListener("input", flashInputIfEmpty);
-  }
-})();
-</script>
-
-</body>
+</script></body>
 </html>
