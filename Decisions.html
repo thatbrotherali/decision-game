@@ -1660,11 +1660,14 @@ function renderLeaderboard(modeKey) {
   });
 
   el.leaderboardToggleButton.addEventListener("click", toggleLeaderboardMode);
-  window.addEventListener("resize", handleOrientationWarning);
-
+  
   el.instructionsCloseBtn.addEventListener("click", function () {
     el.instructionsModal.style.display = "none";
   });
+
+  window.addEventListener("resize", handleOrientationWarning);
+
+  
 
   
   document.getElementById("newPlayerButton").addEventListener("click", function () {
