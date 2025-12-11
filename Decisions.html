@@ -811,6 +811,16 @@
   let leaderboardViewMode = "short";
   let stats = loadStats();
 
+  document.addEventListener("DOMContentLoaded", async () => {
+    const mode = "short";
+    const data = await fetchLeaderboardFromWix(mode);
+    if (data && data.length) {
+      stats.leaderboard[mode] = data;
+    }
+    renderLeaderboard(mode);
+  });
+
+
   // Infinite mode timing
   const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
   const INFINITE_MIN_TIME_LIMIT = 0.3;
@@ -1726,13 +1736,4 @@ function loadLeaderboard(mode) {
 </html>
 
 
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const mode = "short";
-  const data = await fetchLeaderboardFromWix(mode);
-  if (data && data.length) {
-    stats.leaderboard[mode] = data;
-  }
-  renderLeaderboard(mode);
-});
-</script>
+
