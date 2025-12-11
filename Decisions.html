@@ -811,6 +811,20 @@
   let leaderboardViewMode = "short";
   let stats = loadStats();
 
+["short", "medium", "long"].forEach(mode => {
+  fetchLeaderboardFromWix(mode)
+    .then(data => {
+      if (data && Array.isArray(data)) {
+        stats.leaderboard[mode] = data;
+        if (currentMode === mode) renderLeaderboard(mode);
+      } else {
+        console.warn("Wix leaderboard fetch returned invalid data for", mode, ":", data);
+      }
+    })
+    .catch(err => console.error("Leaderboard fetch failed for", mode, ":", err));
+});
+
+
   // Infinite mode timing
   const INFINITE_BASE_TIME_LIMIT = 1.0; // seconds
   const INFINITE_MIN_TIME_LIMIT = 0.3;
