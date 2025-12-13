@@ -1,60 +1,69 @@
 
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<title>Decision Game - Fixed Stats</title>
+    <meta charset="UTF-8">
+    <title>Decision Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #leaderboard { margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-<div id="leaderboard"></div>
-<button id="loadLeaderboard">Load Leaderboard</button>
-<script>
-    function renderLeaderboard(stats) {
-      const container = document.getElementById("leaderboard");
-      container.innerHTML = "<h3>Leaderboard</h3>";
-      if (!Array.isArray(stats) || stats.length === 0) {
-        container.innerHTML += "<p>No scores yet.</p>";
-        return;
-      }
-      const list = document.createElement("ul");
-      stats.forEach(entry => {
-        const item = document.createElement("li");
-        item.textContent = `${entry.initials} - ${entry.time}s (${entry.date})`;
-        list.appendChild(item);
-      });
-      container.appendChild(list);
-    }
+    <h1>Decision Game</h1>
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="toggleLeaderboard()">Toggle Leaderboard</button>
+    <div id="leaderboard" class="hidden"></div>
 
-    async function loadFromWixIntoLocalStorage() {
-      try {
-        // Simulated fetch from Wix
-        const response = await fetch('https://www.example.com/_functions/getLeaderboard');
+</body>
+<script>
+let leaderboardVisible = false;
+let currentMode = 'normal'; // or 'blind'
+
+function startGame() {
+    console.log("Game started");
+    // Placeholder for game logic
+}
+
+// Function triggered when toggling leaderboard view
+function toggleLeaderboard() {
+    leaderboardVisible = !leaderboardVisible;
+    const leaderboardDiv = document.getElementById('leaderboard');
+    if (leaderboardVisible) {
+        leaderboardDiv.classList.remove('hidden');
+        fetchWixAndRenderLeaderboard(currentMode);
+    } else {
+        leaderboardDiv.classList.add('hidden');
+    }
+}
+
+// Fetch from Wix and populate localStorage and then render
+async function fetchWixAndRenderLeaderboard(mode) {
+    try {
+        const response = await fetch("https://www.peopleoftheworld.net/_functions/getLeaderboard");
+        if (!response.ok) throw new Error("Fetch failed");
+
         const data = await response.json();
         const stats = data.items || [];
-        localStorage.setItem('leaderboard', JSON.stringify(stats));
-        return stats;
-      } catch (error) {
+
+        localStorage.setItem(`leaderboard_${mode}`, JSON.stringify(stats));
+        console.log("Wix data loaded into local storage");
+
+        renderLeaderboard(stats);
+    } catch (error) {
         console.error("Wix fetch failed, using localStorage if available.", error);
-        return JSON.parse(localStorage.getItem("leaderboard") || "[]");
-      }
+        const fallback = JSON.parse(localStorage.getItem(`leaderboard_${mode}`) || "[]");
+        renderLeaderboard(fallback);
     }
+}
 
-    document.getElementById("loadLeaderboard").addEventListener("click", async () => {
-      const stats = await loadFromWixIntoLocalStorage();
-      renderLeaderboard(stats);
-    });
-
-    // Ensure there's always a fallback when the DOM loads
-    document.addEventListener("DOMContentLoaded", () => {
-      let stats;
-      try {
-        stats = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-      } catch (e) {
-        stats = [];
-      }
-      renderLeaderboard(stats);
-    });
-  </script>
-</body>
+// Display stats on page
+function renderLeaderboard(stats) {
+    const div = document.getElementById('leaderboard');
+    div.innerHTML = "<h2>Leaderboard</h2><ol>" + stats.map(entry =>
+        `<li>${entry.initials || '---'} - ${entry.time || '--'}s</li>`).join('') + "</ol>";
+}
+</script>
 </html>
+
