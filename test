@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Decision Game - Fixed Stats</title>
+</head>
+<body>
+<div id="leaderboard"></div>
+<button id="loadLeaderboard">Load Leaderboard</button>
+<script>
+    function renderLeaderboard(stats) {
+      const container = document.getElementById("leaderboard");
+      container.innerHTML = "<h3>Leaderboard</h3>";
+      if (!Array.isArray(stats) || stats.length === 0) {
+        container.innerHTML += "<p>No scores yet.</p>";
+        return;
+      }
+      const list = document.createElement("ul");
+      stats.forEach(entry => {
+        const item = document.createElement("li");
+        item.textContent = `${entry.initials} - ${entry.time}s (${entry.date})`;
+        list.appendChild(item);
+      });
+      container.appendChild(list);
+    }
+
+    async function loadFromWixIntoLocalStorage() {
+      try {
+        // Simulated fetch from Wix
+        const response = await fetch('https://www.example.com/_functions/getLeaderboard');
+        const data = await response.json();
+        const stats = data.items || [];
+        localStorage.setItem('leaderboard', JSON.stringify(stats));
+        return stats;
+      } catch (error) {
+        console.error("Wix fetch failed, using localStorage if available.", error);
+        return JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      }
+    }
+
+    document.getElementById("loadLeaderboard").addEventListener("click", async () => {
+      const stats = await loadFromWixIntoLocalStorage();
+      renderLeaderboard(stats);
+    });
+
+    // Ensure there's always a fallback when the DOM loads
+    document.addEventListener("DOMContentLoaded", () => {
+      let stats;
+      try {
+        stats = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+      } catch (e) {
+        stats = [];
+      }
+      renderLeaderboard(stats);
+    });
+  </script>
+</body>
+</html>
