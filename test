@@ -1,69 +1,376 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Decision Game</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #leaderboard { margin-top: 20px; }
-        .hidden { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Decision Game – Leaderboard Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+
+    .panel {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #1b1b1b;
+      border-radius: 8px;
+      padding: 16px 20px 20px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.5);
+      border: 1px solid #333;
+    }
+
+    label {
+      font-size: 0.9rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .row input[type="text"] {
+      flex: 1 1 300px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #111;
+      color: #eee;
+    }
+
+    .modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #555;
+      padding: 6px 12px;
+      background: #333;
+      color: #f5f5f5;
+      font-size: 0.9rem;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #444;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button.active {
+      background: #0070f3;
+      border-color: #4aa3ff;
+    }
+
+    #status {
+      font-size: 0.85rem;
+      margin: 6px 0 10px;
+      min-height: 1.2em;
+      color: #ccc;
+    }
+
+    #status.error {
+      color: #ff6b6b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      background: #111;
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 4px 6px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #222;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #141414;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #191919;
+    }
+
+    #raw {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      background: #111;
+      border-radius: 4px;
+      border: 1px solid #333;
+      padding: 8px;
+      overflow: auto;
+      max-height: 250px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .small {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>Decision Game</h1>
-    <button onclick="startGame()">Start Game</button>
-    <button onclick="toggleLeaderboard()">Toggle Leaderboard</button>
-    <div id="leaderboard" class="hidden"></div>
+  <div class="panel">
+    <h1>Decision Game – Leaderboard Tester</h1>
 
+    <div class="row">
+      <label for="apiBase">API base URL:</label>
+      <input
+        type="text"
+        id="apiBase"
+        value="https://www.peopleoftheworld.net"
+        spellcheck="false"
+      />
+    </div>
+    <div class="small">
+      Tip: If this doesn’t work, try <code>https://peopleoftheworld.net</code> here and test again.
+    </div>
+
+    <div class="modes">
+      <button data-mode="short" class="mode-btn active">Short</button>
+      <button data-mode="long" class="mode-btn">Long</button>
+      <button data-mode="infinite" class="mode-btn">Infinite</button>
+      <button id="refreshBtn">Refresh Current Mode</button>
+    </div>
+
+    <div id="status"></div>
+
+    <div style="overflow-x:auto;">
+      <table id="leaderboardTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Initials</th>
+            <th>Mode</th>
+            <th>Correct</th>
+            <th>Questions</th>
+            <th>Total Time (s)</th>
+            <th>Avg Reaction (s)</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <tr><td colspan="8">No data yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="small">Raw response / errors:</div>
+    <pre id="raw">{ }</pre>
+  </div>
+
+  <script>
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    const statusEl = document.getElementById('status');
+    const tbody = document.getElementById('leaderboardBody');
+    const rawEl = document.getElementById('raw');
+    const apiBaseInput = document.getElementById('apiBase');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    let currentMode = 'short';
+
+    function getApiBase() {
+      let base = apiBaseInput.value.trim();
+      if (!base) return '';
+      // Remove trailing slashes
+      base = base.replace(/\/+$/, '');
+      return base;
+    }
+
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg || '';
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    function formatDateForDisplay(value) {
+      if (!value) return '-';
+      try {
+        const d = new Date(value);
+        if (isNaN(d.getTime())) {
+          // Not a parseable date, show raw
+          return String(value);
+        }
+        return d.toLocaleString();
+      } catch (e) {
+        return String(value);
+      }
+    }
+
+    function renderLeaderboard(mode, results) {
+      tbody.innerHTML = '';
+
+      if (!Array.isArray(results) || results.length === 0) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.textContent = 'No scores found for this mode.';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+        return;
+      }
+
+      results.forEach((entry, index) => {
+        const row = document.createElement('tr');
+
+        const dateValue =
+          entry.date ||
+          entry.bestDate ||
+          entry.updatedAt ||
+          entry.createdAt ||
+          null;
+
+        const cells = [
+          index + 1,
+          entry.initials || '-',
+          entry.mode || mode,
+          entry.correct != null ? entry.correct : '-',
+          entry.questions != null ? entry.questions : '-',
+          entry.totalTime != null ? (entry.totalTime / 1000).toFixed(2) : '-',
+          entry.avgReaction != null ? (entry.avgReaction / 1000).toFixed(3) : '-',
+          formatDateForDisplay(dateValue)
+        ];
+
+        cells.forEach((val) => {
+          const td = document.createElement('td');
+          td.textContent = val;
+          row.appendChild(td);
+        });
+
+        tbody.appendChild(row);
+      });
+    }
+
+    async function loadLeaderboard(mode) {
+      const base = getApiBase();
+      if (!base) {
+        setStatus('Please enter the API base URL.', true);
+        return;
+      }
+
+      currentMode = mode;
+
+      // Update button styles
+      modeButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      const url = `${base}/_functions/decisionGame/leaderboard?mode=${encodeURIComponent(mode)}`;
+      setStatus(`Loading leaderboard for mode "${mode}" from: ${url}`);
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        const text = await response.text();
+        let data = null;
+
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = { parseError: String(e), raw: text };
+        }
+
+        rawEl.textContent = JSON.stringify(data, null, 2);
+
+        if (!response.ok) {
+          setStatus(
+            `Error: HTTP ${response.status} (${response.statusText}). ` +
+            `See raw response below.`,
+            true
+          );
+          tbody.innerHTML = '';
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 8;
+          cell.textContent = 'HTTP error – see raw response below.';
+          row.appendChild(cell);
+          tbody.appendChild(row);
+          return;
+        }
+
+        if (!data || !Array.isArray(data.results)) {
+          setStatus('Request succeeded, but response format is unexpected. See raw output.', true);
+          renderLeaderboard(mode, []);
+          return;
+        }
+
+        setStatus(`Loaded ${data.results.length} entries for mode "${mode}".`);
+        renderLeaderboard(mode, data.results);
+
+      } catch (err) {
+        console.error(err);
+        setStatus(`Fetch failed: ${String(err)}. See console / raw output.`, true);
+        rawEl.textContent = String(err);
+        tbody.innerHTML = '';
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.textContent = 'Fetch error – see status message.';
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      }
+    }
+
+    // Wire up buttons
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        loadLeaderboard(mode);
+      });
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      loadLeaderboard(currentMode);
+    });
+
+    // Auto-load "short" on page load for quick testing
+    window.addEventListener('load', () => {
+      loadLeaderboard('short');
+    });
+  </script>
 </body>
-<script>
-let leaderboardVisible = false;
-let currentMode = 'normal'; // or 'blind'
-
-function startGame() {
-    console.log("Game started");
-    // Placeholder for game logic
-}
-
-// Function triggered when toggling leaderboard view
-function toggleLeaderboard() {
-    leaderboardVisible = !leaderboardVisible;
-    const leaderboardDiv = document.getElementById('leaderboard');
-    if (leaderboardVisible) {
-        leaderboardDiv.classList.remove('hidden');
-        fetchWixAndRenderLeaderboard(currentMode);
-    } else {
-        leaderboardDiv.classList.add('hidden');
-    }
-}
-
-// Fetch from Wix and populate localStorage and then render
-async function fetchWixAndRenderLeaderboard(mode) {
-    try {
-        const response = await fetch("https://www.peopleoftheworld.net/_functions/getLeaderboard");
-        if (!response.ok) throw new Error("Fetch failed");
-
-        const data = await response.json();
-        const stats = data.items || [];
-
-        localStorage.setItem(`leaderboard_${mode}`, JSON.stringify(stats));
-        console.log("Wix data loaded into local storage");
-
-        renderLeaderboard(stats);
-    } catch (error) {
-        console.error("Wix fetch failed, using localStorage if available.", error);
-        const fallback = JSON.parse(localStorage.getItem(`leaderboard_${mode}`) || "[]");
-        renderLeaderboard(fallback);
-    }
-}
-
-// Display stats on page
-function renderLeaderboard(stats) {
-    const div = document.getElementById('leaderboard');
-    div.innerHTML = "<h2>Leaderboard</h2><ol>" + stats.map(entry =>
-        `<li>${entry.initials || '---'} - ${entry.time || '--'}s</li>`).join('') + "</ol>";
-}
-</script>
 </html>
 
