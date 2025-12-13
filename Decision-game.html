@@ -1734,6 +1734,52 @@ async function preloadLeaderboardFromWix() {
 }
 </script>
 
+
+<script>
+  const wixSyncDone = { timed: false, pov: false, timedpov: false };
+
+  async function syncWixToLocal(mode) {
+    const loadingDiv = document.querySelector(`#${mode}-leaderboard .leaderboard-loading`);
+    const contentDiv = document.querySelector(`#${mode}-leaderboard .leaderboard-content`);
+    loadingDiv.style.display = 'block';
+    contentDiv.style.display = 'none';
+
+    try {
+      const response = await fetch('https://www.peopleoftheworld.net/_functions/getAllScores');
+      const json = await response.json();
+      const allScores = json.items;
+
+      const filtered = allScores
+        .filter(entry => entry.mode === mode)
+        .map(entry => ({
+          initials: entry.initials,
+          time: entry.time,
+          date: entry.date || new Date().toISOString()
+        }))
+        .sort((a, b) => a.time - b.time)
+        .slice(0, 10);
+
+      localStorage.setItem(`leaderboard-${mode}`, JSON.stringify(filtered));
+      wixSyncDone[mode] = true;
+    } catch (error) {
+      console.error("Failed to sync from Wix:", error);
+    }
+
+    loadingDiv.style.display = 'none';
+    contentDiv.style.display = 'block';
+    renderLeaderboard(mode);
+  }
+
+  function handleModeToggle(mode) {
+    showLeaderboard(mode); // existing function to show/hide containers
+    if (!wixSyncDone[mode]) {
+      syncWixToLocal(mode);
+    } else {
+      renderLeaderboard(mode);
+    }
+  }
+</script>
+
 </body>
 </html>
 
